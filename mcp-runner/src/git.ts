@@ -19,9 +19,9 @@ export async function cloneOrPullRepo(repoUrl: string, branch: string, repoDir: 
     await fs.mkdir(baseDir, { recursive: true });
 
     if (isRepo) {
-      // If repo exists, just pull latest changes
-      console.log(`Repository exists at ${fullTargetDir}, pulling latest changes...`);
-      execSync(`cd "${fullTargetDir}" && git pull origin ${branch}`, { stdio: 'inherit' });
+      // If repo exists, reset any changes and force pull latest changes
+      console.log(`Repository exists at ${fullTargetDir}, resetting and pulling latest changes...`);
+      execSync(`cd "${fullTargetDir}" && git reset --hard HEAD && git clean -fd && git pull origin ${branch}`, { stdio: 'inherit' });
     } else {
       // Create target directory if it doesn't exist
       await fs.mkdir(path.dirname(fullTargetDir), { recursive: true });

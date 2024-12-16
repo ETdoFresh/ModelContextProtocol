@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { Command } from 'commander';
 const axios = require('axios').default;
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -231,60 +230,57 @@ async function runNodeServer(entryPoint: string, projectPath: string, args: stri
 }
 
 async function main() {
-  const program = new Command();
+  // Get all arguments after the executable name
+  const args = process.argv.slice(1);
+  
+  // Find the GitHub URL
+  const githubUrlIndex = args.findIndex(arg => arg.startsWith('https://github.com/'));
+  if (githubUrlIndex === -1) {
+    console.error('Error: GitHub URL is required');
+    process.exit(1);
+  }
 
-  program
-    .name('mcp-runner')
-    .description('Run MCP servers directly from GitHub URLs')
-    .version('1.0.0')
-    .argument('<url>', 'GitHub URL to the MCP server')
-    .option('-d, --dir <directory>', 'Target directory for installation', 'mcp-servers')
-    .option('-a, --args <args...>', 'Additional arguments to pass to the server')
-    .action(async (url: string, options: { dir: string, args?: string[] }) => {
-      try {
-        const projectInfo = await parseGitHubUrl(url);
-        const targetDir = path.resolve(options.dir);
-        
-        await fs.mkdir(targetDir, { recursive: true });
-        
-        console.log(`Installing ${projectInfo.type} project from ${projectInfo.repoUrl}...`);
-        
-        let projectPath = '';
-        if (projectInfo.type === 'node') {
-          projectPath = await installNodeProject(projectInfo, targetDir);
-        } else {
-          projectPath = await installPythonProject(projectInfo, targetDir);
-        }
-        
-        if (!projectPath) {
-          console.log('No installation needed for single file.');
-          return;
-        }
+  const url = args[githubUrlIndex];
+  // Take all arguments after the URL
+  const serverArgs = args.slice(githubUrlIndex + 1);
 
-        console.log('Installation complete! Starting server...');
-        
-        if (projectInfo.type === 'node') {
-          const entryPoint = await findEntryPoint(projectPath);
-          await runNodeServer(entryPoint, projectPath, options.args, projectInfo.isEsm);
-        } else {
-          const pythonCmd = process.platform === 'win32' ? '.venv\\Scripts\\python' : '.venv/bin/python';
-          const moduleName = await findPythonModuleName(projectPath);
-          console.log(`Starting Python server with module: ${moduleName}`);
-          
-          const args = ['-m', moduleName];
-          if (options.args) {
-            args.push(...options.args);
-          }
-          
-          spawn(pythonCmd, args, { cwd: projectPath, stdio: 'inherit' });
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        process.exit(1);
-      }
-    });
+  try {
+    const projectInfo = await parseGitHubUrl(url);
+    const targetDir = path.resolve('mcp-servers');
+    
+    await fs.mkdir(targetDir, { recursive: true });
+    
+    console.log(`Installing ${projectInfo.type} project from ${projectInfo.repoUrl}...`);
+    
+    let projectPath = '';
+    if (projectInfo.type === 'node') {
+      projectPath = await installNodeProject(projectInfo, targetDir);
+    } else {
+      projectPath = await installPythonProject(projectInfo, targetDir);
+    }
+    
+    if (!projectPath) {
+      console.log('No installation needed for single file.');
+      return;
+    }
 
-  program.parse();
+    console.log('Installation complete! Starting server...');
+    
+    if (projectInfo.type === 'node') {
+      const entryPoint = await findEntryPoint(projectPath);
+      await runNodeServer(entryPoint, projectPath, serverArgs, projectInfo.isEsm);
+    } else {
+      const pythonCmd = process.platform === 'win32' ? '.venv\\Scripts\\python' : '.venv/bin/python';
+      const moduleName = await findPythonModuleName(projectPath);
+      console.log(`Starting Python server with module: ${moduleName}`);
+      
+      const pythonArgs = ['-m', moduleName, ...serverArgs];
+      spawn(pythonCmd, pythonArgs, { cwd: projectPath, stdio: 'inherit' });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    process.exit(1);
+  }
 }
 
 main().catch(console.error);

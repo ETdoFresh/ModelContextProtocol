@@ -17,14 +17,14 @@ mcp-runner <github-url> [mcp-script-options]
 
 ### Examples
 
-1. Run a Node.js MCP server (filesystem):
-```bash
-mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem .
-```
-
-2. Run a Python MCP server (time) with timezone:
+1. Run a Python MCP server (time) with timezone:
 ```bash
 mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/time --local-timezone America/Chicago
+```
+
+2. Run a Node.js MCP server (filesystem):
+```bash
+mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem .
 ```
 
 ## Features

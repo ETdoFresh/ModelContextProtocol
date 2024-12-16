@@ -5,41 +5,26 @@ A command-line tool to run MCP servers directly from GitHub URLs. It automatical
 ## Installation
 
 ```bash
-# Clone the repository
-git clone [your-repo-url]
-cd mcp-runner
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Link globally
-npm link
+# Creates executable in ./bin
+npm run build:exe
 ```
 
 ## Usage
 
 ```bash
-mcp-runner <github-url> [options]
+mcp-runner <github-url> [mcp-script-options]
 ```
-
-### Options
-
-- `-d, --dir <directory>`: Target directory for installation (default: "mcp-servers")
-- `-a, --args <args...>`: Additional arguments to pass to the server
 
 ### Examples
 
 1. Run a Node.js MCP server (filesystem):
 ```bash
-mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem --args .
+mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem .
 ```
 
 2. Run a Python MCP server (time) with timezone:
 ```bash
-mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/time --args --local-timezone America/Chicago
+mcp-runner https://github.com/modelcontextprotocol/servers/tree/main/src/time --local-timezone America/Chicago
 ```
 
 ## Features
@@ -79,5 +64,5 @@ The tool provides informative error messages for common issues:
 To modify the tool:
 
 1. Make changes to the TypeScript files in `src/`
-2. Rebuild with `npm run build`
+2. Rebuild with `npm run build:exe`
 3. Test your changes with `npm start`

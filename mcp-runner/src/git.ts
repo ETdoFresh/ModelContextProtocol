@@ -3,12 +3,14 @@ import * as fs from 'fs/promises';
 import { execSync } from 'child_process';
 import { exists } from './utils';
 
-export async function cloneOrPullRepo(repoUrl: string, branch: string, targetDir: string) {
+export async function cloneOrPullRepo(repoUrl: string, branch: string, repoDir: string) {
   try {
-    // Use MCP_SERVER_DIR if specified, otherwise create mcp-servers in runtime directory
-    const scriptDir = path.dirname(process.argv[1]); // Get the directory of the running script
-    const baseDir = process.env.MCP_SERVER_DIR || path.join(scriptDir, 'mcp-servers');
-    const fullTargetDir = path.join(baseDir, targetDir);
+    // Use MCP_SERVER_DIR if specified, otherwise use current directory
+    const baseDir = process.env.MCP_SERVER_DIR ? 
+      path.resolve(process.env.MCP_SERVER_DIR) : 
+      path.resolve('.');
+    
+    const fullTargetDir = path.resolve(baseDir, repoDir);
 
     const gitDir = path.join(fullTargetDir, '.git');
     const isRepo = await exists(gitDir);

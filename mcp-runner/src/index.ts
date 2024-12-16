@@ -14,13 +14,13 @@ async function main() {
     process.exit(1);
   }
 
-  const url = args[githubUrlIndex];
   // Take all arguments after the URL
+  const url = args[githubUrlIndex];
   const serverArgs = args.slice(githubUrlIndex + 1);
 
   try {
     const projectInfo = await parseGitHubUrl(url);
-    const targetDir = 'servers';
+    const targetDir = 'mcp-servers';
     
     console.log(`Installing ${projectInfo.type} project from ${projectInfo.repoUrl}...`);
     

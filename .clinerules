@@ -1,5 +1,10 @@
 <clinerules>
     <rule>
+        <name>Get Local Time</name>
+        <trigger>Task Complete</trigger>
+        <description>When a task is completed, get the local time via MCP server</description>
+    </rule>
+    <rule>
         <name>Log Changes</name>
         <trigger>Task Complete</trigger>
         <description>When a task is completed, log changes to file. Indicate local datetime the changes are taking place</description>
@@ -17,11 +22,16 @@
                 <guideline>Use dashes (-) for bullet points in multi-line messages [if necessary]</guideline>
                 <guideline>Use optional command if you do not have enough details create commit message</guideline>
             </guidelines>
-        <commands>>
+        <commands>
             <command>git add .</command>
             <command optional="true">git --no-pager diff --cached<file></command>
             <command>git commit -m "Your commit message here"</command>
             <command>git push</command>
         </commands>
+    </rule>
+    <rule>
+        <name>Prompt to build</name>
+        <trigger>Task Complete</trigger>
+        <description>After changes are logged, prompt the user to build the project</description>
     </rule>
 </clinerules>

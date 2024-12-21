@@ -1,29 +1,34 @@
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { Handler } from './types';
+import { Handler, ProjectInfo } from './types';
+import { cloneOrPullRepo } from './git';
 
 export class GoHandler implements Handler {
-    constructor(private projectPath: string) {}
+    private projectPath: string = '';
+    
+    constructor(private projectInfo: ProjectInfo, private targetDir: string) {}
 
     isApplicable(): boolean {
-        // Check for go.mod file or .go files
-        return (
-            existsSync(join(this.projectPath, 'go.mod')) ||
-            existsSync(join(this.projectPath, 'main.go'))
-        );
+        return this.projectInfo.type === 'go';
     }
 
     async install(): Promise<void> {
-        console.log('Installing Go dependencies...');
-        try {
-            // Run go mod download to install dependencies
-            execSync('go mod download', {
-                cwd: this.projectPath,
-                stdio: 'inherit'
-            });
-        } catch (error) {
-            throw new Error(`Failed to install Go dependencies: ${error}`);
+        const repoDir = join(this.targetDir, this.projectInfo.owner, this.projectInfo.repo);
+        const fullPath = await cloneOrPullRepo(this.projectInfo.repoUrl, this.projectInfo.branch, repoDir);
+        this.projectPath = join(fullPath, this.projectInfo.path);
+
+        if (!this.projectInfo.isFile) {
+            console.log('Installing Go dependencies...');
+            try {
+                // Run go mod download to install dependencies
+                execSync('go mod download', {
+                    cwd: this.projectPath,
+                    stdio: 'inherit'
+                });
+            } catch (error) {
+                throw new Error(`Failed to install Go dependencies: ${error}`);
+            }
         }
     }
 

@@ -31,3 +31,11 @@ Fixed mcp-ignore server:
 - Set SDK version to 0.5.0 for compatibility
 - Simplified package configuration
 - Verified server runs successfully
+
+## 2024-12-21 12:16:25 CST
+
+Improved mcp-ignore server:
+- Added esbuild for bundling ES modules into single file
+- Successfully built executable with pkg
+- Cleaned up unused files and configurations
+- Verified bundled executable works correctly

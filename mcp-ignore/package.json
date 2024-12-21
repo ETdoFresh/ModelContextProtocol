@@ -3,18 +3,29 @@
   "version": "1.0.0",
   "description": "MCP server that returns zero functions",
   "type": "module",
+  "main": "dist/bundle.cjs",
   "bin": {
-    "mcp-ignore": "dist/index.js"
+    "mcp-ignore": "dist/bundle.cjs"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/index.js",
-    "prepare": "npm run build",
-    "watch": "tsc --watch"
+    "build": "tsc",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --outfile=dist/bundle.cjs --format=cjs",
+    "build:exe": "npm run bundle && shx chmod +x dist/bundle.cjs && pkg ."
   },
-  "keywords": ["mcp", "ignore"],
+  "pkg": {
+    "scripts": "dist/bundle.cjs",
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "bin"
+  },
+  "keywords": [
+    "mcp",
+    "ignore"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -22,6 +33,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
+    "esbuild": "^0.19.11",
+    "pkg": "^5.8.1",
     "shx": "^0.3.4",
     "typescript": "^5.3.3"
   }

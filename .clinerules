@@ -8,6 +8,10 @@
         <name>Log Changes</name>
         <trigger>Task Complete</trigger>
         <description>When a task is completed, log changes to file. Indicate local datetime the changes are taking place</description>
+        <guidelines>
+            <guideline>Append changes to existing change logs</guideline>
+            <guideline>Do not delete existing change logs</guideline>
+        </guideline>
         <file>changes.md</file>
     </rule>
     <rule>

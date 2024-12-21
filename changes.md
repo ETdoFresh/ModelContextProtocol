@@ -15,3 +15,11 @@ Built MCP Runner with Go support:
 - Successfully compiled TypeScript code
 - Created executable (40.6 MB) with pkg
 - Verified executable creation in bin directory
+
+## 2024-12-21 11:57:56 CST
+
+Created mcp-ignore server:
+- Basic TypeScript project setup with necessary dependencies
+- Implemented IgnoreServer class that returns zero functions
+- Added build configuration and npm scripts
+- Server connects to stdio transport but provides no capabilities (tools or resources)

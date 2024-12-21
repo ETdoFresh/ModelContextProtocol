@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { parseGitHubUrl } from './github';
-import { installNodeProject, findEntryPoint, runNodeServer } from './node-handler';
-import { installPythonProject, findPythonModuleName, runPythonServer } from './python-handler';
+import { NodeHandler } from './node-handler';
+import { PythonHandler } from './python-handler';
+import { GoHandler } from './go-handler';
+import { Handler } from './types';
 
 async function main() {
   // Get all arguments after the executable name
@@ -22,29 +24,32 @@ async function main() {
     const projectInfo = await parseGitHubUrl(url);
     const targetDir = 'mcp-servers';
     
-    console.log(`Installing ${projectInfo.type} project from ${projectInfo.repoUrl}...`);
+    console.log(`Processing ${projectInfo.type} project from ${projectInfo.repoUrl}...`);
     
-    let projectPath = '';
-    if (projectInfo.type === 'node') {
-      projectPath = await installNodeProject(projectInfo, targetDir);
-    } else {
-      projectPath = await installPythonProject(projectInfo, targetDir);
-    }
-    
-    if (!projectPath) {
-      console.log('No installation needed for single file.');
-      return;
+    // Create handlers
+    const handlers: Handler[] = [
+      new NodeHandler(projectInfo, targetDir),
+      new PythonHandler(projectInfo, targetDir),
+      new GoHandler(projectInfo, targetDir)
+    ];
+
+    // Find applicable handler
+    const handler = handlers.find(h => h.isApplicable());
+    if (!handler) {
+      throw new Error('No suitable handler found for this project type');
     }
 
-    console.log('Installation complete! Starting server...');
-    
-    if (projectInfo.type === 'node') {
-      const entryPoint = await findEntryPoint(projectPath);
-      await runNodeServer(entryPoint, projectPath, serverArgs, projectInfo.isEsm);
-    } else {
-      const moduleName = await findPythonModuleName(projectPath);
-      runPythonServer(projectPath, moduleName, serverArgs);
-    }
+    // Install dependencies
+    await handler.install();
+    console.log('Installation complete!');
+
+    // Build the project
+    await handler.build();
+    console.log('Build complete!');
+
+    // Run the server
+    console.log('Starting server...');
+    await handler.run(serverArgs);
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);

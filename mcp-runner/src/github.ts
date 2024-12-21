@@ -16,7 +16,17 @@ export async function parseGitHubUrl(url: string): Promise<ProjectInfo> {
 
   if (isFile) {
     const ext = path.extname(projectPath);
-    const type = ext === '.py' ? 'python' : 'node';
+    let type: 'node' | 'python' | 'go';
+    switch (ext) {
+      case '.py':
+        type = 'python';
+        break;
+      case '.go':
+        type = 'go';
+        break;
+      default:
+        type = 'node';
+    }
     return { type, repoUrl, owner, repo, branch, path: projectPath, isFile, isEsm: false };
   }
 
@@ -28,8 +38,18 @@ export async function parseGitHubUrl(url: string): Promise<ProjectInfo> {
     const hasPackageJson = files.some((f: any) => f.name === 'package.json');
     const hasRequirements = files.some((f: any) => f.name === 'requirements.txt');
     const hasPyProject = files.some((f: any) => f.name === 'pyproject.toml');
+    const hasGoMod = files.some((f: any) => f.name === 'go.mod');
 
-    const type = hasPackageJson ? 'node' : (hasRequirements || hasPyProject) ? 'python' : 'node';
+    let type: 'node' | 'python' | 'go';
+    if (hasPackageJson) {
+      type = 'node';
+    } else if (hasRequirements || hasPyProject) {
+      type = 'python';
+    } else if (hasGoMod) {
+      type = 'go';
+    } else {
+      type = 'node'; // Default to node if no specific project files found
+    }
     return { type, repoUrl, owner, repo, branch, path: projectPath, isFile, isEsm: false };
   } catch (error) {
     console.error('Error fetching repository contents:', error);

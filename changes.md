@@ -23,3 +23,11 @@ Created mcp-ignore server:
 - Implemented IgnoreServer class that returns zero functions
 - Added build configuration and npm scripts
 - Server connects to stdio transport but provides no capabilities (tools or resources)
+
+## 2024-12-21 12:10:30 CST
+
+Fixed mcp-ignore server:
+- Updated to use ES modules properly
+- Set SDK version to 0.5.0 for compatibility
+- Simplified package configuration
+- Verified server runs successfully

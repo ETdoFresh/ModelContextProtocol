@@ -9,9 +9,9 @@
         <trigger>Task Complete and File Changes Made</trigger>
         <description>When a task is completed, log changes to file. Indicate local datetime the changes are taking place</description>
         <guidelines>
-            <guideline>Append changes to existing change logs</guideline>
+            <guideline>Add newest changes at the top of the file</guideline>
             <guideline>Do not delete existing change logs</guideline>
-        </guideline>
+        </guidelines>
         <file>changes.md</file>
     </rule>
     <rule>

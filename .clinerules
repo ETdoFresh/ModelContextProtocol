@@ -1,12 +1,12 @@
 <clinerules>
     <rule>
         <name>Get Local Time</name>
-        <trigger>Task Complete</trigger>
+        <trigger>Task Complete and File Changes Made</trigger>
         <description>When a task is completed, get the local time via MCP server</description>
     </rule>
     <rule>
         <name>Log Changes</name>
-        <trigger>Task Complete</trigger>
+        <trigger>Task Complete and File Changes Made</trigger>
         <description>When a task is completed, log changes to file. Indicate local datetime the changes are taking place</description>
         <guidelines>
             <guideline>Append changes to existing change logs</guideline>
@@ -16,7 +16,7 @@
     </rule>
     <rule>
         <name>Git Commit and Push</name>
-        <trigger>Task Complete</trigger>
+        <trigger>Task Complete and File Changes Made</trigger>
         <description>After changes are logged, commit and push changes to git</description>
         <guidelines>
                 <guideline>Use present tense ("Add feature" not "Added feature")</guideline>

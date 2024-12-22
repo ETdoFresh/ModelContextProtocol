@@ -2,7 +2,11 @@
     <rule>
         <name>Get Local Time</name>
         <trigger>Task Complete and File Changes Made</trigger>
-        <description>When a task is completed, get the local time via MCP server</description>
+        <description>When a task is completed, get the local time via one of the following commands in command line interface</description>
+        <commands>
+            <command shell="cmd">echo %date% %time% &amp; tzutil /g</command>
+            <command shell="powershell">Get-Date -Format "ddd MM/dd/yyyy HH:mm:ss.fff zzz"</command>
+        </commands>
     </rule>
     <rule>
         <name>Log Changes</name>
@@ -11,7 +15,27 @@
         <guidelines>
             <guideline>Add newest changes at the top of the file</guideline>
             <guideline>Do not delete existing change logs</guideline>
+            <guideline>If change can be explained in one line, do not use bullet points</guideline>
+            <guideline>Should not be more than 6 bullet point descriptions, but can be as few as 1 description</guideline>
+            <guideline>File header should be # Change Log</guideline>
         </guidelines>
+        <examples>
+            <example>
+# Change Log
+
+## 2024-12-21 14:18:12 CST
+
+Update feature name:
+- First change description
+- Second change description
+- Third change description
+            </example>
+            <example>
+## 2024-12-21 14:19:55 CST
+
+Change description
+            </example>
+        </examples>
         <file>changes.md</file>
     </rule>
     <rule>

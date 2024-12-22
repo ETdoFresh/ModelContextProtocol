@@ -1,5 +1,12 @@
 # Changes Log
 
+## 2024-12-21 18:30:00 CST
+
+Add claude-settings documentation:
+- Create README.md with features and installation instructions
+- Document both mcp-runner and manual installation methods
+- Add usage examples and development details
+
 ## 2024-12-21 18:27:00 CST
 
 Fix claude-settings MCP server:

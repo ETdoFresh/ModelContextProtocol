@@ -1,5 +1,18 @@
 # Changes Log
 
+## 2024-12-21 18:27:00 CST
+
+Fix claude-settings MCP server:
+- Update @modelcontextprotocol/sdk to version 0.5.0
+- Fix dependency version mismatch error
+
+## 2024-12-21 18:25:00 CST
+
+Update claude-settings MCP configuration:
+- Switch to using mcp-runner command
+- Configure to load server directly from GitHub repository
+- Update both Claude Desktop and Cline MCP settings
+
 ## 2024-12-21 18:21:00 CST
 
 Add cross-platform claude-settings MCP server:

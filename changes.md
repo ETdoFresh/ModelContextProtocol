@@ -1,5 +1,10 @@
 # Changes Log
 
+## 2024-12-21 21:51:41 CST
+
+Add Windsurf rules and update CLI rules
+{{ ... }}
+
 ## 2024-12-21 18:37:00 CST
 
 Update .clinerules guidelines:

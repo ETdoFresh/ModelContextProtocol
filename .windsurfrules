@@ -1,0 +1,66 @@
+<rules>
+    <rule>
+        <name>Get Local Time</name>
+        <trigger>Task Complete and File Changes Made</trigger>
+        <description>When a task is completed, get the local time via one of the following commands in command line interface</description>
+        <commands>
+            <command shell="cmd">echo %date% %time% &amp; tzutil /g</command>
+            <command shell="powershell">Get-Date -Format "ddd MM/dd/yyyy HH:mm:ss.fff zzz"</command>
+        </commands>
+    </rule>
+    <rule>
+        <name>Log Changes</name>
+        <trigger>Task Complete and File Changes Made</trigger>
+        <description>When a task is completed, log changes to file. Indicate local datetime the changes are taking place</description>
+        <guidelines>
+            <guideline>Add newest changes at the top of the file</guideline>
+            <guideline>Do not delete existing change logs</guideline>
+            <guideline>Always preserve the complete change history</guideline>
+            <guideline>If change can be explained in one line, do not use bullet points</guideline>
+            <guideline>Should not be more than 6 bullet point descriptions, but can be as few as 1 description</guideline>
+            <guideline>File header should be # Change Log</guideline>
+        </guidelines>
+        <examples>
+            <example>
+# Change Log
+
+## 2024-12-21 14:18:12 CST
+
+Update feature name:
+- First change description
+- Second change description
+- Third change description
+            </example>
+            <example>
+## 2024-12-21 14:19:55 CST
+
+Change description
+            </example>
+        </examples>
+        <file>changes.md</file>
+    </rule>
+    <rule>
+        <name>Git Commit and Push</name>
+        <trigger>Task Complete and File Changes Made</trigger>
+        <description>After changes are logged, commit and push changes to git</description>
+        <guidelines>
+                <guideline>Use present tense ("Add feature" not "Added feature")</guideline>
+                <guideline>Start with capital letter</guideline>
+                <guideline>No prefixes (like "feat:", "fix:", etc.)</guideline>
+                <guideline>Be descriptive but concise</guideline>
+                <guideline>Use dashes (-) for bullet points in multi-line messages [if necessary]</guideline>
+                <guideline>Use optional command if you do not have enough details create commit message</guideline>
+            </guidelines>
+        <commands>
+            <command>git add .</command>
+            <command optional="true">git --no-pager diff --cached<file></command>
+            <command>git commit -m "Your commit message here"</command>
+            <command>git push</command>
+        </commands>
+    </rule>
+    <rule>
+        <name>Prompt to build</name>
+        <trigger>Task Complete</trigger>
+        <description>After changes are logged, prompt the user to build the project</description>
+    </rule>
+</rules>

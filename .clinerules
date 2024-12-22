@@ -15,6 +15,7 @@
         <guidelines>
             <guideline>Add newest changes at the top of the file</guideline>
             <guideline>Do not delete existing change logs</guideline>
+            <guideline>Always preserve the complete change history</guideline>
             <guideline>If change can be explained in one line, do not use bullet points</guideline>
             <guideline>Should not be more than 6 bullet point descriptions, but can be as few as 1 description</guideline>
             <guideline>File header should be # Change Log</guideline>

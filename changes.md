@@ -1,5 +1,11 @@
 # Changes Log
 
+## 2024-12-21 18:37:00 CST
+
+Update .clinerules guidelines:
+- Add explicit guideline to preserve complete change history
+- Reinforce requirement to never delete existing logs
+
 ## 2024-12-21 18:35:00 CST
 
 Fix Windows settings path:

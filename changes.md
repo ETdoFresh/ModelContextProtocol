@@ -1,5 +1,13 @@
 # Changes Log
 
+## 2024-12-21 18:21:00 CST
+
+Add cross-platform claude-settings MCP server:
+- Created server to open Claude Desktop MCP settings in default editor
+- Implemented support for both Windows and Mac paths
+- Added open_settings tool using @modelcontextprotocol/sdk
+- Configured for both Claude Desktop and Cline MCP
+
 ## 2024-12-21 12:44:51 CST
 
 Update changes.md and .clinerules:

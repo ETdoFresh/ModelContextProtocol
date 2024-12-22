@@ -34,7 +34,7 @@ class ClaudeSettingsServer {
     const home = os.homedir();
 
     if (platform === 'win32') {
-      return path.join(home, 'AppData', 'Local', 'Claude', 'claude_desktop_config.json');
+      return path.join(home, 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json');
     } else if (platform === 'darwin') {
       return path.join(home, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
     } else {

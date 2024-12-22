@@ -7,7 +7,7 @@ A cross-platform MCP server that provides a tool to open Claude Desktop MCP sett
 - Opens Claude Desktop MCP settings file in your default editor
 - Cross-platform support for both Windows and Mac
 - Automatically detects the correct settings file location:
-  - Windows: `%USERPROFILE%\AppData\Local\Claude\claude_desktop_config.json`
+  - Windows: `%USERPROFILE%\AppData\Roaming\Claude\claude_desktop_config.json`
   - Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ## Installation

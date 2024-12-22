@@ -1,5 +1,12 @@
 # Changes Log
 
+## 2024-12-21 18:35:00 CST
+
+Fix Windows settings path:
+- Update Windows path to use AppData/Roaming instead of AppData/Local
+- Update documentation with correct Windows path
+- Fix path in server implementation
+
 ## 2024-12-21 18:30:00 CST
 
 Add claude-settings documentation:
@@ -50,14 +57,6 @@ Improved mcp-ignore server:
 - Successfully built executable with pkg
 - Cleaned up unused files and configurations
 - Verified bundled executable works correctly
-
-## 2024-12-21 18:24:00 CST
-
-Added documentation to mcp-ignore:
-- Created comprehensive README.md
-- Documented installation methods
-- Added development and build instructions
-- Explained server purpose and use cases
 
 ## 2024-12-21 12:10:30 CST
 

@@ -51,6 +51,14 @@ Improved mcp-ignore server:
 - Cleaned up unused files and configurations
 - Verified bundled executable works correctly
 
+## 2024-12-21 18:24:00 CST
+
+Added documentation to mcp-ignore:
+- Created comprehensive README.md
+- Documented installation methods
+- Added development and build instructions
+- Explained server purpose and use cases
+
 ## 2024-12-21 12:10:30 CST
 
 Fixed mcp-ignore server:

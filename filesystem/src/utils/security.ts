@@ -2,9 +2,10 @@ import fs from "fs/promises";
 import path from "path";
 import os from 'os';
 
-// Add type declaration for global allowedDirectories
+// Add type declaration for global properties
 declare global {
   var allowedDirectories: string[];
+  var cwd: string;
 }
 
 // Normalize all paths consistently
@@ -22,9 +23,11 @@ export function expandHome(filepath: string): string {
 // Security utilities
 export async function validatePath(requestedPath: string): Promise<string> {
   const expandedPath = expandHome(requestedPath);
+  
+  // Handle relative paths based on cwd
   const absolute = path.isAbsolute(expandedPath)
     ? path.resolve(expandedPath)
-    : path.resolve(process.cwd(), expandedPath);
+    : path.resolve(global.cwd, expandedPath);
 
   const normalizedRequested = normalizePath(absolute);
 

@@ -43,6 +43,12 @@ import {
   handleRemoveAllowedDirectory,
 } from './allowed-directories.js';
 
+import {
+  cwdOperationTools,
+  handleGetCwd,
+  handleChangeCwd,
+} from './cwd-operations.js';
+
 // Re-export everything
 export * from './read-file.js';
 export * from './write-file.js';
@@ -52,6 +58,7 @@ export * from './move-file.js';
 export * from './search-files.js';
 export * from './file-info.js';
 export * from './allowed-directories.js';
+export * from './cwd-operations.js';
 
 // Combine all tool definitions
 export const allTools = [
@@ -63,6 +70,7 @@ export const allTools = [
   ...searchFileTools,
   ...fileInfoTools,
   ...allowedDirectoryTools,
+  ...cwdOperationTools,
 ];
 
 // Export all handlers
@@ -80,6 +88,8 @@ export const handlers = {
   list_allowed_directories: handleListAllowedDirectories,
   add_allowed_directory: handleAddAllowedDirectory,
   remove_allowed_directory: handleRemoveAllowedDirectory,
+  get_cwd: handleGetCwd,
+  change_cwd: handleChangeCwd,
 } as const;
 
 export type HandlerName = keyof typeof handlers;

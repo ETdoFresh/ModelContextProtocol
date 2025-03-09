@@ -23,6 +23,9 @@ global.allowedDirectories = args.map(dir =>
   normalizePath(path.resolve(expandHome(dir)))
 );
 
+// Initialize the current working directory to the first allowed directory
+global.cwd = global.allowedDirectories[0];
+
 // Validate that all directories exist and are accessible
 await Promise.all(args.map(async (dir) => {
   try {
@@ -41,7 +44,7 @@ await Promise.all(args.map(async (dir) => {
 const server = new Server(
   {
     name: "secure-filesystem-server",
-    version: "0.2.0",
+    version: "0.3.0", // Incremented version to reflect CWD feature
   },
   {
     capabilities: {
@@ -82,6 +85,7 @@ async function runServer() {
   await server.connect(transport);
   console.error("Secure MCP Filesystem Server running on stdio");
   console.error("Allowed directories:", global.allowedDirectories);
+  console.error("Current working directory:", global.cwd);
 }
 
 runServer().catch((error) => {

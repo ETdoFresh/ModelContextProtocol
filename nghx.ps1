@@ -80,7 +80,7 @@ if ($shouldDownload) {
         "https://github.com/$owner/$repo/archive/refs/heads/$branch.zip"
     }
     Write-Verbose "Downloading from: $archiveUrl"
-    $zipPath = Join-Path $tempDir "repo.zip"
+    $zipPath = Join-Path $tempDir "$owner-$repo-$commitSha.zip"
     
     try {
         # Download the zip file

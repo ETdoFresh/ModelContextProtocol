@@ -6,6 +6,23 @@ param(
     [string[]]$ScriptArgs
 )
 
+# Display usage information if help is requested
+if ($RepoPath -eq "-h" -or $RepoPath -eq "--help" -or $RepoPath -eq "/?") {
+    Write-Host "NGHX - Node GitHub Execute"
+    Write-Host "Run JavaScript/TypeScript code directly from GitHub repositories"
+    Write-Host ""
+    Write-Host "Usage:"
+    Write-Host "  nghx <github-repo-url> [arguments]"
+    Write-Host ""
+    Write-Host "Examples:"
+    Write-Host "  nghx https://github.com/username/repo"
+    Write-Host "  nghx https://github.com/username/repo/tree/main/path/to/directory"
+    Write-Host "  nghx https://github.com/username/repo/tree/branch-name"
+    Write-Host ""
+    Write-Host "Note: The repository must contain JavaScript or TypeScript files."
+    exit 0
+}
+
 # Configuration
 $cacheDir = "$env:LOCALAPPDATA\npm-cache\_nghx"
 $tempDir = "$env:TEMP\nghx-temp"
@@ -86,7 +103,8 @@ if ($shouldDownload) {
                     Copy-Item -Path $sourcePath -Destination $repoDir -Force
                 }
             } else {
-                Write-Error "Path not found in repository: $path"
+                Write-Error "Path '$path' not found in repository '$owner/$repo'. Please check that the path exists in the repository."
+                Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
                 exit 1
             }
         } else {
@@ -96,8 +114,18 @@ if ($shouldDownload) {
         
         Write-Host "Downloaded to: $repoDir"
     } catch {
-        Write-Error "Failed to download repository: $_"
-        exit 1
+        if ($_.Exception.Response.StatusCode -eq 404) {
+            Write-Error "Repository not found: https://github.com/$owner/$repo/tree/$branch"
+            Write-Host "Please check that the repository exists and is public."
+            exit 1
+        } elseif ($_.Exception.Message -match "404") {
+            Write-Error "Repository or branch not found: https://github.com/$owner/$repo/tree/$branch"
+            Write-Host "Please check that the repository exists, is public, and the branch name is correct."
+            exit 1
+        } else {
+            Write-Error "Failed to download repository: $_"
+            exit 1
+        }
     }
 }
 
@@ -209,7 +237,9 @@ if ($isNpmPackage) {
                 }
                 
                 if ($jsFiles.Count -eq 0) {
-                    Write-Error "No JavaScript files found in the repository."
+                    Write-Error "No JavaScript files found in the repository '$owner/$repo' at path '$path'."
+                    Write-Host "Please check that the repository contains JavaScript files or specify a different path."
+                    Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
                     exit 1
                 }
             }
@@ -263,7 +293,9 @@ if ($isNpmPackage) {
         $tsFiles = Get-ChildItem -Path $repoDir -Filter "*.ts" -Recurse | Where-Object { -not $_.PSIsContainer -and $_.Name -ne "index.d.ts" }
         
         if ($tsFiles.Count -eq 0) {
-            Write-Error "No JavaScript or TypeScript files found in the repository."
+            Write-Error "No JavaScript or TypeScript files found in the repository '$owner/$repo' at path '$path'."
+            Write-Host "Please check that the repository contains JavaScript or TypeScript files or specify a different path."
+            Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
             exit 1
         }
         
@@ -293,7 +325,9 @@ if ($isNpmPackage) {
             # Look for compiled JS files
             $jsFiles = Get-ChildItem -Path $repoDir -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
             if ($jsFiles.Count -eq 0) {
-                Write-Error "Failed to compile TypeScript files."
+                Write-Error "Failed to compile TypeScript files in repository '$owner/$repo' at path '$path'."
+                Write-Host "Please check that the TypeScript files can be compiled or specify a different path."
+                Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
                 exit 1
             }
         } finally {

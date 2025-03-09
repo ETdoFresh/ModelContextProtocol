@@ -24,14 +24,14 @@ async function handleGitWorkflow(args?: Record<string, any>) {
     // Get the full diff directly using the updated getDiff function
     const resolvedRepoPath = path.resolve(repoPath);
     
-    // Use the updated getDiff function with showall=false to see only staged changes
-    const diffResult = await getDiff({ repoPath: resolvedRepoPath, showall: false });
+    // Use the updated getDiff function
+    const diffResult = await getDiff({ repoPath: resolvedRepoPath });
     
     // Get the diff output
     const diffOutput = diffResult.content[0].text;
     
     // Check if there are any actual changes (not just warnings)
-    if (diffResult.content[0].text === 'No changes detected.' || hasOnlyWarningsOrEmpty(diffOutput)) {
+    if (diffOutput === 'No changes detected.' || hasOnlyWarningsOrEmpty(diffOutput)) {
       return {
         description: 'Git Workflow',
         messages: [

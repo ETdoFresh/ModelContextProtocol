@@ -50,8 +50,12 @@ $response = Invoke-RestMethod -Uri $apiUrl -ErrorAction Stop
 $commitSha = $response.sha.Substring(0, 10) # Use first 10 chars of the SHA
 Write-Verbose "Using commit SHA: $commitSha"
 
-# Generate a unique folder name using the commit SHA and path
-$uniqueId = if ($path) { "$commitSha-$($path -replace '[\\\/\:\*\?\"\<\>\|]', '_')" } else { $commitSha }
+# Generate a unique folder name using owner, repo, commit SHA and path
+$uniqueId = if ($path) {
+    "$owner-$repo-$commitSha-$($path -replace '[\\\/\:\*\?\"\<\>\|]', '_')"
+} else {
+    "$owner-$repo-$commitSha"
+}
 $repoDir = Join-Path $cacheDir $uniqueId
 
 # Check if we already have this repo/path cached with the same SHA
@@ -126,10 +130,10 @@ if ($shouldDownload) {
             Copy-Item -Path "$($extractedFolder.FullName)\*" -Destination $repoDir -Recurse -Force
         }
         
-        # Save the commit SHA to a file for future reference
+        # Save the commit SHA to a file for future reference in this unique repo cache
         $shaFilePath = Join-Path $repoDir ".sha"
         $commitSha | Out-File -FilePath $shaFilePath -NoNewline -Encoding utf8
-        Write-Verbose "Saved SHA $commitSha to $shaFilePath"
+        Write-Verbose "Saved SHA $commitSha to $shaFilePath for $owner/$repo"
         
     } catch {
         if ($_.Exception.Response.StatusCode -eq 404) {

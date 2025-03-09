@@ -54,12 +54,20 @@ Write-Verbose "Using commit SHA: $commitSha"
 $uniqueId = if ($path) { "$commitSha-$($path -replace '[\\\/\:\*\?\"\<\>\|]', '_')" } else { $commitSha }
 $repoDir = Join-Path $cacheDir $uniqueId
 
-# Check if we already have this repo/path cached and it's not older than 24 hours
+# Check if we already have this repo/path cached with the same SHA
 $shouldDownload = $true
 if (Test-Path $repoDir) {
-    $lastModified = (Get-Item $repoDir).LastWriteTime
-    if ((Get-Date) - $lastModified -lt [TimeSpan]::FromHours(24)) {
-        $shouldDownload = $false
+    $shaFilePath = Join-Path $repoDir ".sha"
+    if (Test-Path $shaFilePath) {
+        $storedSha = Get-Content $shaFilePath -Raw
+        if ($storedSha -eq $commitSha) {
+            Write-Verbose "Repository already cached with the same SHA: $commitSha"
+            $shouldDownload = $false
+        } else {
+            Write-Verbose "SHA has changed. Stored: $storedSha, Current: $commitSha"
+        }
+    } else {
+        Write-Verbose "No SHA file found in cached repository"
     }
 }
 
@@ -117,6 +125,11 @@ if ($shouldDownload) {
             # No specific path, copy the entire repository
             Copy-Item -Path "$($extractedFolder.FullName)\*" -Destination $repoDir -Recurse -Force
         }
+        
+        # Save the commit SHA to a file for future reference
+        $shaFilePath = Join-Path $repoDir ".sha"
+        $commitSha | Out-File -FilePath $shaFilePath -NoNewline -Encoding utf8
+        Write-Verbose "Saved SHA $commitSha to $shaFilePath"
         
     } catch {
         if ($_.Exception.Response.StatusCode -eq 404) {

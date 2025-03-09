@@ -2,12 +2,15 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { ToolSchema } from '@modelcontextprotocol/sdk/types.js';
+
+const ToolInputSchema = ToolSchema.shape.inputSchema;
+type ToolInput = z.infer<typeof ToolInputSchema>;
 
 const execAsync = promisify(exec);
 
-// Input schema with optional force flag
-const KillClaudeInputSchema = z.object({
+// Schema definitions
+export const KillClaudeInputSchema = z.object({
   force: z.boolean().optional().default(false).describe("Force kill the process if true"),
 });
 
@@ -137,9 +140,14 @@ export async function killClaude(args: any) {
   };
 }
 
-// Tool definition export
-export const killClaudeTool: Tool = {
-  name: "kill_claude",
-  description: "Terminates any running Claude desktop application processes",
-  parameters: zodToJsonSchema(KillClaudeInputSchema),
-};
+// Tool definitions
+export const killClaudeTools = [
+  {
+    name: "kill_claude",
+    description: "Terminates any running Claude desktop application processes",
+    inputSchema: zodToJsonSchema(KillClaudeInputSchema) as ToolInput,
+  },
+];
+
+// For backward compatibility
+export const killClaudeTool = killClaudeTools[0];

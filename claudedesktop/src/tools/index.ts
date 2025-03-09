@@ -1,15 +1,19 @@
-import { killClaude, killClaudeTool } from './kill-claude.js';
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import {
+  killClaudeTools,
+  killClaude,
+} from './kill-claude.js';
 
-// Export all available tools
-export const allTools: Tool[] = [
-  killClaudeTool,
+// Re-export everything
+export * from './kill-claude.js';
+
+// Combine all tool definitions
+export const allTools = [
+  ...killClaudeTools,
 ];
 
-// Type for the tool handler names
-export type HandlerName = 'kill_claude';
+// Export all handlers
+export const handlers = {
+  kill_claude: killClaude,
+} as const;
 
-// Map tool names to their handler functions
-export const handlers: Record<HandlerName, (args: any) => Promise<any>> = {
-  'kill_claude': killClaude,
-};
+export type HandlerName = keyof typeof handlers;

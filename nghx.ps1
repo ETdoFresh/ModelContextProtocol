@@ -30,7 +30,6 @@ $tempDir = "$env:TEMP\nghx-temp"
 # Create cache directory if it doesn't exist
 if (-not (Test-Path $cacheDir)) {
     New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
-    Write-Host "Created cache directory: $cacheDir"
 }
 
 # Create temp directory if it doesn't exist
@@ -58,13 +57,11 @@ if (Test-Path $repoDir) {
     $lastModified = (Get-Item $repoDir).LastWriteTime
     if ((Get-Date) - $lastModified -lt [TimeSpan]::FromHours(24)) {
         $shouldDownload = $false
-        Write-Host "Using cached version from: $repoDir"
     }
 }
 
 # Download the repository if needed
 if ($shouldDownload) {
-    Write-Host "Downloading $owner/$repo/$branch/$path..."
     
     # Clean temp directory
     if (Test-Path $tempDir) {
@@ -104,7 +101,6 @@ if ($shouldDownload) {
                 }
             } else {
                 Write-Error "Path '$path' not found in repository '$owner/$repo'. Please check that the path exists in the repository."
-                Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
                 exit 1
             }
         } else {
@@ -112,15 +108,12 @@ if ($shouldDownload) {
             Copy-Item -Path "$($extractedFolder.FullName)\*" -Destination $repoDir -Recurse -Force
         }
         
-        Write-Host "Downloaded to: $repoDir"
     } catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             Write-Error "Repository not found: https://github.com/$owner/$repo/tree/$branch"
-            Write-Host "Please check that the repository exists and is public."
             exit 1
         } elseif ($_.Exception.Message -match "404") {
             Write-Error "Repository or branch not found: https://github.com/$owner/$repo/tree/$branch"
-            Write-Host "Please check that the repository exists, is public, and the branch name is correct."
             exit 1
         } else {
             Write-Error "Failed to download repository: $_"
@@ -139,10 +132,9 @@ if ($isNpmPackage) {
     $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
     
     # Install dependencies
-    Write-Host "Installing dependencies..."
     Push-Location $repoDir
     try {
-        npm install --no-fund --no-audit --loglevel=error
+        npm install --no-fund --no-audit --loglevel=error --silent | Out-Null
     } finally {
         Pop-Location
     }
@@ -150,14 +142,13 @@ if ($isNpmPackage) {
     # Check if the package has build scripts and run them if needed
     $hasBuildScript = $false
     if ($packageJson.scripts -and ($packageJson.scripts.build -or $packageJson.scripts.prepare)) {
-        Write-Host "Building package..."
         Push-Location $repoDir
         try {
             if ($packageJson.scripts.build) {
-                npm run build --if-present
+                npm run build --if-present --silent | Out-Null
                 $hasBuildScript = $true
             } elseif ($packageJson.scripts.prepare) {
-                npm run prepare --if-present
+                npm run prepare --if-present --silent | Out-Null
                 $hasBuildScript = $true
             }
         } finally {
@@ -213,28 +204,24 @@ if ($isNpmPackage) {
                 
                 if ($tsFiles.Count -gt 0 -and -not $hasBuildScript) {
                     # Try to compile TypeScript files
-                    Write-Host "TypeScript files found. Compiling..."
                     Push-Location $repoDir
                     try {
                         # Install TypeScript if needed
                         if (-not (Get-Command tsc -ErrorAction SilentlyContinue)) {
-                            Write-Host "Installing TypeScript..."
-                            npm install -g typescript
+                            npm install -g typescript --silent | Out-Null
                         }
                         
                         # Compile TypeScript files
                         if (Test-Path "tsconfig.json") {
-                            Write-Host "Using project's tsconfig.json to compile..."
-                            npm install # Make sure all dependencies are installed
-                            npm run build # Try to use the project's build script first
+                            npm install --silent | Out-Null # Make sure all dependencies are installed
+                            npm run build --silent | Out-Null # Try to use the project's build script first
                             
                             # If build script failed or doesn't exist, try direct tsc
                             if ($LASTEXITCODE -ne 0) {
-                                Write-Host "Build script failed, trying direct tsc compilation..."
-                                tsc
+                                tsc | Out-Null
                             }
                         } else {
-                            tsc --outDir ./dist *.ts
+                            tsc --outDir ./dist *.ts | Out-Null
                         }
                         
                         # Check if compilation produced JS files
@@ -243,7 +230,6 @@ if ($isNpmPackage) {
                         # If no JS files found in root, check dist directory specifically
                         if ($jsFiles.Count -eq 0 -and (Test-Path "$repoDir/dist")) {
                             $jsFiles = Get-ChildItem -Path "$repoDir/dist" -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
-                            Write-Host "Found $($jsFiles.Count) JavaScript files in dist directory"
                         }
                     } finally {
                         Pop-Location
@@ -252,8 +238,6 @@ if ($isNpmPackage) {
                 
                 if ($jsFiles.Count -eq 0) {
                     Write-Error "No JavaScript files found in the repository '$owner/$repo' at path '$path'."
-                    Write-Host "Please check that the repository contains JavaScript files or specify a different path."
-                    Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
                     exit 1
                 }
             }
@@ -272,28 +256,24 @@ if ($isNpmPackage) {
     }
 
     # Run the script
-    Write-Host "Running $mainScript..."
     Push-Location $repoDir
     try {
         # For MCP servers, check if there's a specific pattern to run
         $fileContent = Get-Content $mainScriptPath -Raw -ErrorAction SilentlyContinue
         if ($mainScript -match "server-.*\.js$" -or $fileContent -match "@modelcontextprotocol") {
             # This appears to be an MCP server, run with current directory as argument
-            Write-Host "Detected MCP server, running with current directory as argument..."
             
             # Make the script executable if it has a shebang
             if ($fileContent -match "^#!") {
-                Write-Host "Making script executable..."
                 # Skip chmod on Windows as it's not needed - Node.js can run the script without executable permissions
                 # On Unix/Linux systems, this would be: chmod +x $mainScriptPath
             }
             
             # Check if we need to install dependencies first
             if (Test-Path (Join-Path $repoDir "package.json")) {
-                Write-Host "Installing dependencies for MCP server..."
                 Push-Location $repoDir
                 try {
-                    npm install --no-fund --no-audit --loglevel=error
+                    npm install --no-fund --no-audit --loglevel=error --silent | Out-Null
                 } finally {
                     Pop-Location
                 }
@@ -301,11 +281,9 @@ if ($isNpmPackage) {
             
             if ($ScriptArgs.Count -gt 0) {
                 # Use the provided arguments instead of the default
-                Write-Host "Running with user-provided arguments: $ScriptArgs"
                 node $mainScriptPath $ScriptArgs
             } else {
                 # Use the default argument (current directory)
-                Write-Host "Running with current directory as argument: $repoDir"
                 node $mainScriptPath $repoDir
             }
         } else {
@@ -329,46 +307,39 @@ if ($isNpmPackage) {
         
         if ($tsFiles.Count -eq 0) {
             Write-Error "No JavaScript or TypeScript files found in the repository '$owner/$repo' at path '$path'."
-            Write-Host "Please check that the repository contains JavaScript or TypeScript files or specify a different path."
-            Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
             exit 1
         }
         
         # Install TypeScript if needed
-        Write-Host "TypeScript files found. Installing dependencies..."
         Push-Location $repoDir
         try {
             # Check if there's a package.json for dependencies
             if (Test-Path "package.json") {
-                npm install --no-fund --no-audit --loglevel=error
+                npm install --no-fund --no-audit --loglevel=error --silent | Out-Null
             }
             
             # Install TypeScript globally if needed
             if (-not (Get-Command tsc -ErrorAction SilentlyContinue)) {
-                Write-Host "Installing TypeScript..."
-                npm install -g typescript
+                npm install -g typescript --silent | Out-Null
             }
             
             # Compile TypeScript files
-            Write-Host "Compiling TypeScript files..."
             if (Test-Path "tsconfig.json") {
-                Write-Host "Using project's tsconfig.json to compile..."
                 
                 # Check if there's a build script in package.json
                 if (Test-Path "package.json") {
                     $packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
                     if ($packageJson.scripts -and $packageJson.scripts.build) {
-                        Write-Host "Using project's build script..."
-                        npm install # Make sure all dependencies are installed
-                        npm run build
+                        npm install --silent | Out-Null # Make sure all dependencies are installed
+                        npm run build --silent | Out-Null
                     } else {
-                        tsc
+                        tsc | Out-Null
                     }
                 } else {
-                    tsc
+                    tsc | Out-Null
                 }
             } else {
-                tsc --outDir ./dist *.ts
+                tsc --outDir ./dist *.ts | Out-Null
             }
             
             # Look for compiled JS files
@@ -377,12 +348,9 @@ if ($isNpmPackage) {
             # If no JS files found in root, check dist directory specifically
             if ($jsFiles.Count -eq 0 -and (Test-Path "$repoDir/dist")) {
                 $jsFiles = Get-ChildItem -Path "$repoDir/dist" -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
-                Write-Host "Found $($jsFiles.Count) JavaScript files in dist directory"
             }
             if ($jsFiles.Count -eq 0) {
                 Write-Error "Failed to compile TypeScript files in repository '$owner/$repo' at path '$path'."
-                Write-Host "Please check that the TypeScript files can be compiled or specify a different path."
-                Write-Host "Try visiting https://github.com/$owner/$repo to see the available directories and files."
                 exit 1
             }
         } finally {
@@ -403,28 +371,24 @@ if ($isNpmPackage) {
         $mainScript = $jsFiles | Select-Object -First 1
     }
     
-    Write-Host "Running $($mainScript.Name)..."
     Push-Location $repoDir
     try {
         # For MCP servers, check if there's a specific pattern to run
         $fileContent = Get-Content $mainScript.FullName -Raw -ErrorAction SilentlyContinue
         if ($mainScript.Name -match "server-.*\.js$" -or $fileContent -match "@modelcontextprotocol") {
             # This appears to be an MCP server, run with the current directory as argument
-            Write-Host "Detected MCP server, running with current directory as argument..."
             
             # Make the script executable if it has a shebang
             if ($fileContent -match "^#!") {
-                Write-Host "Making script executable..."
                 # Skip chmod on Windows as it's not needed - Node.js can run the script without executable permissions
                 # On Unix/Linux systems, this would be: chmod +x $mainScript.FullName
             }
             
             # Check if we need to install dependencies first
             if (Test-Path (Join-Path $repoDir "package.json")) {
-                Write-Host "Installing dependencies for MCP server..."
                 Push-Location $repoDir
                 try {
-                    npm install --no-fund --no-audit --loglevel=error
+                    npm install --no-fund --no-audit --loglevel=error --silent | Out-Null
                 } finally {
                     Pop-Location
                 }
@@ -432,11 +396,9 @@ if ($isNpmPackage) {
             
             if ($ScriptArgs.Count -gt 0) {
                 # Use the provided arguments instead of the default
-                Write-Host "Running with user-provided arguments: $ScriptArgs"
                 node $mainScript.FullName $ScriptArgs
             } else {
                 # Use the default argument (current directory)
-                Write-Host "Running with current directory as argument: $repoDir"
                 node $mainScript.FullName $repoDir
             }
         } else {

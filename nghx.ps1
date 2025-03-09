@@ -224,13 +224,27 @@ if ($isNpmPackage) {
                         
                         # Compile TypeScript files
                         if (Test-Path "tsconfig.json") {
-                            tsc
+                            Write-Host "Using project's tsconfig.json to compile..."
+                            npm install # Make sure all dependencies are installed
+                            npm run build # Try to use the project's build script first
+                            
+                            # If build script failed or doesn't exist, try direct tsc
+                            if ($LASTEXITCODE -ne 0) {
+                                Write-Host "Build script failed, trying direct tsc compilation..."
+                                tsc
+                            }
                         } else {
                             tsc --outDir ./dist *.ts
                         }
                         
                         # Check if compilation produced JS files
                         $jsFiles = Get-ChildItem -Path $repoDir -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
+                        
+                        # If no JS files found in root, check dist directory specifically
+                        if ($jsFiles.Count -eq 0 -and (Test-Path "$repoDir/dist")) {
+                            $jsFiles = Get-ChildItem -Path "$repoDir/dist" -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
+                            Write-Host "Found $($jsFiles.Count) JavaScript files in dist directory"
+                        }
                     } finally {
                         Pop-Location
                     }
@@ -264,13 +278,34 @@ if ($isNpmPackage) {
         # For MCP servers, check if there's a specific pattern to run
         $fileContent = Get-Content $mainScriptPath -Raw -ErrorAction SilentlyContinue
         if ($mainScript -match "server-.*\.js$" -or $fileContent -match "@modelcontextprotocol") {
-            # This appears to be an MCP server, run with the current directory as argument
+            # This appears to be an MCP server, run with current directory as argument
             Write-Host "Detected MCP server, running with current directory as argument..."
+            
+            # Make the script executable if it has a shebang
+            if ($fileContent -match "^#!") {
+                Write-Host "Making script executable..."
+                # Skip chmod on Windows as it's not needed - Node.js can run the script without executable permissions
+                # On Unix/Linux systems, this would be: chmod +x $mainScriptPath
+            }
+            
+            # Check if we need to install dependencies first
+            if (Test-Path (Join-Path $repoDir "package.json")) {
+                Write-Host "Installing dependencies for MCP server..."
+                Push-Location $repoDir
+                try {
+                    npm install --no-fund --no-audit --loglevel=error
+                } finally {
+                    Pop-Location
+                }
+            }
+            
             if ($ScriptArgs.Count -gt 0) {
                 # Use the provided arguments instead of the default
+                Write-Host "Running with user-provided arguments: $ScriptArgs"
                 node $mainScriptPath $ScriptArgs
             } else {
                 # Use the default argument (current directory)
+                Write-Host "Running with current directory as argument: $repoDir"
                 node $mainScriptPath $repoDir
             }
         } else {
@@ -317,13 +352,33 @@ if ($isNpmPackage) {
             # Compile TypeScript files
             Write-Host "Compiling TypeScript files..."
             if (Test-Path "tsconfig.json") {
-                tsc
+                Write-Host "Using project's tsconfig.json to compile..."
+                
+                # Check if there's a build script in package.json
+                if (Test-Path "package.json") {
+                    $packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
+                    if ($packageJson.scripts -and $packageJson.scripts.build) {
+                        Write-Host "Using project's build script..."
+                        npm install # Make sure all dependencies are installed
+                        npm run build
+                    } else {
+                        tsc
+                    }
+                } else {
+                    tsc
+                }
             } else {
                 tsc --outDir ./dist *.ts
             }
             
             # Look for compiled JS files
             $jsFiles = Get-ChildItem -Path $repoDir -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
+            
+            # If no JS files found in root, check dist directory specifically
+            if ($jsFiles.Count -eq 0 -and (Test-Path "$repoDir/dist")) {
+                $jsFiles = Get-ChildItem -Path "$repoDir/dist" -Filter "*.js" -Recurse | Where-Object { -not $_.PSIsContainer }
+                Write-Host "Found $($jsFiles.Count) JavaScript files in dist directory"
+            }
             if ($jsFiles.Count -eq 0) {
                 Write-Error "Failed to compile TypeScript files in repository '$owner/$repo' at path '$path'."
                 Write-Host "Please check that the TypeScript files can be compiled or specify a different path."
@@ -356,11 +411,32 @@ if ($isNpmPackage) {
         if ($mainScript.Name -match "server-.*\.js$" -or $fileContent -match "@modelcontextprotocol") {
             # This appears to be an MCP server, run with the current directory as argument
             Write-Host "Detected MCP server, running with current directory as argument..."
+            
+            # Make the script executable if it has a shebang
+            if ($fileContent -match "^#!") {
+                Write-Host "Making script executable..."
+                # Skip chmod on Windows as it's not needed - Node.js can run the script without executable permissions
+                # On Unix/Linux systems, this would be: chmod +x $mainScript.FullName
+            }
+            
+            # Check if we need to install dependencies first
+            if (Test-Path (Join-Path $repoDir "package.json")) {
+                Write-Host "Installing dependencies for MCP server..."
+                Push-Location $repoDir
+                try {
+                    npm install --no-fund --no-audit --loglevel=error
+                } finally {
+                    Pop-Location
+                }
+            }
+            
             if ($ScriptArgs.Count -gt 0) {
                 # Use the provided arguments instead of the default
+                Write-Host "Running with user-provided arguments: $ScriptArgs"
                 node $mainScript.FullName $ScriptArgs
             } else {
                 # Use the default argument (current directory)
+                Write-Host "Running with current directory as argument: $repoDir"
                 node $mainScript.FullName $repoDir
             }
         } else {

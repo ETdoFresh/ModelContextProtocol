@@ -1,0 +1,34 @@
+{
+  "name": "git-commit-message",
+  "version": "1.0.0",
+  "description": "MCP server for git operations including diff viewing, commit, and push",
+  "main": "build/index.js",
+  "type": "module",
+  "bin": {
+    "git-commit-message": "build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "start": "node build/index.js",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "example:js": "node examples/client.js",
+    "example:ts": "ts-node --esm examples/client.ts"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "mcp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.5.0",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,16 +1,13 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-
-const execAsync = promisify(exec);
+import { execGitCommand } from './util.js';
 
 // Input schema for git_push
 const GitPushInputSchema = z.object({
   remote: z.string().optional().default("origin").describe("Remote repository name"),
   branch: z.string().optional().describe("Branch name (defaults to current branch)"),
-  force: z.boolean().optional().default(false).describe("Force push (use with caution)")
+  force: z.boolean().optional().default(false).describe("Force push (use with caution)"),
+  repoPath: z.string().optional().default('.').describe("Path to the git repository")
 });
 
 // Push changes to remote repository
@@ -21,10 +18,7 @@ async function pushChanges(args: any) {
     // If branch is not specified, get the current branch
     let branch = params.branch;
     if (!branch) {
-      const { stdout } = await execAsync('git rev-parse --abbrev-ref HEAD', {
-        // @ts-ignore (global is defined in index.ts)
-        cwd: global.repoPath,
-      });
+      const { stdout } = await execGitCommand('git rev-parse --abbrev-ref HEAD', params.repoPath);
       branch = stdout.trim();
     }
     
@@ -35,10 +29,7 @@ async function pushChanges(args: any) {
     }
     
     // Execute the git push command
-    const { stdout, stderr } = await execAsync(command, {
-      // @ts-ignore (global is defined in index.ts)
-      cwd: global.repoPath,
-    });
+    const { stdout, stderr } = await execGitCommand(command, params.repoPath);
     
     // Git often outputs to stderr even for successful operations
     const output = stdout + (stderr ? `\n${stderr}` : '');
@@ -72,7 +63,30 @@ async function pushChanges(args: any) {
 export const gitPushTool: Tool = {
   name: "git_push",
   description: "Push local commits to a remote repository",
-  parameters: zodToJsonSchema(GitPushInputSchema),
+  inputSchema: {
+    type: "object",
+    properties: {
+      remote: {
+        type: "string",
+        description: "Remote repository name",
+        default: "origin"
+      },
+      branch: {
+        type: "string",
+        description: "Branch name (defaults to current branch)"
+      },
+      force: {
+        type: "boolean",
+        description: "Force push (use with caution)",
+        default: false
+      },
+      repoPath: {
+        type: "string",
+        description: "Path to the git repository",
+        default: "."
+      }
+    }
+  }
 };
 
 export { pushChanges };

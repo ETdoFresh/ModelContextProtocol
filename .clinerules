@@ -1,4 +1,0 @@
-<rule_reference>
-    <filename>.windsurfrules</filename>
-    <description>Use the rules described in filename</description>
-</rule_reference>

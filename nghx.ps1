@@ -44,12 +44,15 @@ $repo = $Matches[2]
 $branch = if ($Matches[3]) { $Matches[3] } else { "main" }
 $path = if ($Matches[4]) { $Matches[4] } else { "" }
 
-# Generate a unique folder name for this repo/path combination
-$repoHash = [System.Security.Cryptography.SHA256]::Create().ComputeHash(
-    [System.Text.Encoding]::UTF8.GetBytes("$owner/$repo/$branch/$path")
-) | ForEach-Object { $_.ToString("x2") }
-$repoHash = [string]::Join("", $repoHash)
-$repoDir = Join-Path $cacheDir $repoHash
+# Get the commit SHA for the branch
+$apiUrl = "https://api.github.com/repos/$owner/$repo/commits/$branch"
+$response = Invoke-RestMethod -Uri $apiUrl -ErrorAction Stop
+$commitSha = $response.sha.Substring(0, 10) # Use first 10 chars of the SHA
+Write-Verbose "Using commit SHA: $commitSha"
+
+# Generate a unique folder name using the commit SHA and path
+$uniqueId = if ($path) { "$commitSha-$($path -replace '[\\\/\:\*\?\"\<\>\|]', '_')" } else { $commitSha }
+$repoDir = Join-Path $cacheDir $uniqueId
 
 # Check if we already have this repo/path cached and it's not older than 24 hours
 $shouldDownload = $true
@@ -68,8 +71,15 @@ if ($shouldDownload) {
         Remove-Item -Path "$tempDir\*" -Recurse -Force -ErrorAction SilentlyContinue
     }
     
-    # Always download the whole repository as a zip file
-    $archiveUrl = "https://github.com/$owner/$repo/archive/refs/heads/$branch.zip"
+    # Download the repository using the commit SHA when available
+    $archiveUrl = if ($commitSha -and $commitSha.Length -eq 10) {
+        # If we have a valid commit SHA, use it for the download
+        "https://github.com/$owner/$repo/archive/$commitSha.zip"
+    } else {
+        # Fallback to branch-based download
+        "https://github.com/$owner/$repo/archive/refs/heads/$branch.zip"
+    }
+    Write-Verbose "Downloading from: $archiveUrl"
     $zipPath = Join-Path $tempDir "repo.zip"
     
     try {

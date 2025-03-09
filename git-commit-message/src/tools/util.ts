@@ -48,5 +48,6 @@ export async function execGitCommand(command: string, repoPath: string): Promise
   
   return await execAsync(command, {
     cwd: resolvedPath,
+    maxBuffer: 10 * 1024 * 1024 // Increase buffer to 10MB
   });
 }

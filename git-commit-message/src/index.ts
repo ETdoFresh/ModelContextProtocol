@@ -4,8 +4,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { allTools, handlers, HandlerName } from "./tools/index.js";
+import { allPrompts, promptHandlers, PromptName } from "./prompts/index.js";
 
 // Create the MCP server
 const server = new Server(
@@ -16,6 +19,7 @@ const server = new Server(
   {
     capabilities: {
       tools: {},
+      prompts: {},
     },
   }
 );
@@ -44,6 +48,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       ],
       isError: true,
     };
+  }
+});
+
+// Handler to list all available prompts
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+  return { prompts: allPrompts };
+});
+
+// Handler to get a prompt by name
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  try {
+    const { name, arguments: promptArgs } = request.params;
+    const handler = promptHandlers[name as PromptName];
+    if (!handler) {
+      throw new Error(`Unknown prompt: ${name}`);
+    }
+    return await handler(promptArgs);
+  } catch (error: any) {
+    throw new Error(`Error getting prompt: ${error.message}`);
   }
 });
 

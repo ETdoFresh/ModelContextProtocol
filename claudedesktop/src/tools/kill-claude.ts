@@ -26,11 +26,15 @@ async function killClaudeProcesses(force: boolean): Promise<string> {
   try {
     // Find Claude processes based on OS
     if (isWin) {
-      findCmd = 'tasklist /FI "IMAGENAME eq Claude*" /FO CSV';
+      // Use a more flexible approach to find Claude processes
+      // Get all processes and filter for claude (case-insensitive)
+      findCmd = 'tasklist /FO CSV';
       const { stdout: findOutput } = await execAsync(findCmd);
       
-      // Parse process IDs from tasklist output
-      const lines = findOutput.split('\n').filter(line => line.includes('Claude'));
+      // Parse process IDs from tasklist output (case-insensitive check for "claude")
+      const lines = findOutput.split('\n').filter(line => 
+        line.toLowerCase().includes('claude'));
+      
       if (lines.length === 0) {
         return "No Claude processes found.";
       }
@@ -38,9 +42,10 @@ async function killClaudeProcesses(force: boolean): Promise<string> {
       // Extract PIDs from CSV format
       const pids: string[] = [];
       lines.forEach(line => {
-        const match = /"Claude[^"]*","?(\d+)"?/.exec(line);
-        if (match && match[1]) {
-          pids.push(match[1]);
+        // More flexible regex to match claude with any casing
+        const match = /"([^"]*claude[^"]*)","?(\d+)"?/i.exec(line);
+        if (match && match[2]) {
+          pids.push(match[2]);
         }
       });
       

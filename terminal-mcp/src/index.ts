@@ -6,47 +6,12 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import fs from "fs/promises";
-import path from "path";
-import { normalizePath, expandHome } from "./utils/security.js";
 import { allTools, handlers, HandlerName } from "./tools/index.js";
 
-// Declare globals
-declare global {
-  var allowedDirectories: string[];
-  var cwd: string;
-}
-
+// No global state or directory restrictions
 // Command line argument parsing
 const args = process.argv.slice(2);
-if (args.length === 0) {
-  console.error("Usage: mcp-server-terminal <allowed-directory> [additional-directories...]");
-  process.exit(1);
-}
-
-// Store allowed directories in normalized form and make globally available
-global.allowedDirectories = args.map(dir =>
-  normalizePath(path.resolve(expandHome(dir)))
-);
-
-// Initialize the current working directory to the first allowed directory
-global.cwd = global.allowedDirectories[0];
-
-// Validate that all directories exist and are accessible
-(async () => {
-  for (const dir of args) {
-    try {
-      const stats = await fs.stat(dir);
-      if (!stats.isDirectory()) {
-        console.error(`Error: ${dir} is not a directory`);
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error(`Error accessing directory ${dir}:`, error);
-      process.exit(1);
-    }
-  }
-})();
+// No validation or restrictions on directories
 
 // Server setup
 const server = new Server(
@@ -91,9 +56,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Secure MCP Terminal Server running on stdio");
-  console.error("Allowed directories:", global.allowedDirectories);
-  console.error("Current working directory:", global.cwd);
+  console.error("MCP Terminal Server running on stdio");
 }
 
 runServer().catch((error) => {

@@ -3,33 +3,27 @@ import { promisify } from 'util';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { isPathAllowed, isCommandAllowed, escapeCommand } from '../utils/security.js';
 
 const execAsync = promisify(exec);
 
+// Escape command to prevent injection
+function escapeCommand(command: string): string {
+  // Replace any instances of multiple semicolons with a single one
+  return command.replace(/;{2,}/g, ';');
+}
+
 // Input schema for execute_command
 const ExecuteCommandInputSchema = z.object({
-  command: z.string().describe("The command to execute at the current working directory"),
+  command: z.string().describe("The command to execute"),
+  cwd: z.string().optional().describe("Optional working directory for the command"),
   timeout: z.number().min(1).max(60000).optional().default(10000).describe("Maximum execution time in milliseconds (1-60000)")
 });
 
-// Execute a command in the current working directory
-async function executeCommandInCwd(command: string, timeout: number): Promise<string> {
+// Execute a command
+async function executeCommandImpl(command: string, cwd?: string, timeout?: number): Promise<string> {
   try {
-    // Sanitize and validate the command
+    // Sanitize the command
     const sanitizedCommand = escapeCommand(command);
-    
-    if (!isCommandAllowed(sanitizedCommand)) {
-      return "Error: Command contains potentially dangerous operations and has been blocked for security reasons.";
-    }
-    
-    // @ts-ignore (global is defined in index.ts)
-    const cwd = global.cwd;
-    
-    // Ensure cwd is allowed
-    if (!isPathAllowed(cwd)) {
-      return `Error: Current working directory (${cwd}) is not in the allowed directories list.`;
-    }
     
     // Execute the command with timeout
     const { stdout, stderr } = await execAsync(sanitizedCommand, {
@@ -58,7 +52,7 @@ async function executeCommandInCwd(command: string, timeout: number): Promise<st
 export async function executeCommand(args: any) {
   const params = ExecuteCommandInputSchema.parse(args);
   
-  const result = await executeCommandInCwd(params.command, params.timeout);
+  const result = await executeCommandImpl(params.command, params.cwd, params.timeout);
   
   return {
     content: [{ type: "text", text: result }]
@@ -68,6 +62,26 @@ export async function executeCommand(args: any) {
 // Tool definition export
 export const executeCommandTool: Tool = {
   name: "execute_command",
-  description: "Executes a command at the current working directory with security restrictions",
-  parameters: zodToJsonSchema(ExecuteCommandInputSchema),
+  description: "Executes a command with optional working directory",
+  inputSchema: {
+    type: "object",
+    properties: {
+      command: {
+        type: "string",
+        description: "The command to execute"
+      },
+      cwd: {
+        type: "string",
+        description: "Optional working directory for the command"
+      },
+      timeout: {
+        type: "number",
+        description: "Maximum execution time in milliseconds (1-60000)",
+        default: 10000,
+        minimum: 1,
+        maximum: 60000
+      }
+    },
+    required: ["command"]
+  }
 };

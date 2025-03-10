@@ -60,13 +60,14 @@ const ChatSessions: React.FC = () => {
 
   const loadSessions = () => {
     const loadedSessions = getChatSessions();
+    console.log('Loaded sessions:', loadedSessions);
     // Sort by most recently updated
-    loadedSessions.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    loadedSessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     setSessions(loadedSessions);
   };
 
   const handleCreateSession = () => {
-    createChatSession();
+    const newSession = createChatSession();
     loadSessions();
     navigate('/');
   };
@@ -92,13 +93,29 @@ const ChatSessions: React.FC = () => {
   };
 
   const handleDeleteSession = (sessionId: string) => {
+    console.log('Deleting session with ID:', sessionId);
+    
     if (window.confirm('Are you sure you want to delete this chat session?')) {
+      // Delete the session
       deleteChatSession(sessionId);
-      loadSessions();
+      
+      // Force reload sessions after a short delay to ensure localStorage changes are processed
+      setTimeout(() => {
+        console.log('Reloading sessions after deletion');
+        loadSessions();
+      }, 100);
     }
   };
 
   const formatDate = (date: Date) => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      // Handle invalid date by creating a new Date object
+      date = new Date(date);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+    }
+    
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
@@ -150,6 +167,7 @@ const ChatSessions: React.FC = () => {
                   className="btn btn-icon delete" 
                   onClick={(e) => {
                     e.stopPropagation();
+                    console.log('Delete button clicked for session:', session.id);
                     handleDeleteSession(session.id);
                   }}
                   aria-label="Delete session"

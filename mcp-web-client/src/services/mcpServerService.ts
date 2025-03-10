@@ -149,10 +149,24 @@ export const exportMcpConfig = (): Record<string, McpServerConfig> => {
   servers.forEach(server => {
     // Use the slug version of the name as the key
     const key = toSlug(server.name);
-    config[key] = {
-      ...server.config,
+    
+    // Start with the basic config
+    const serverConfig: any = {
+      command: server.config.command,
       disabled: !server.enabled
     };
+    
+    // Only add args if not empty
+    if (server.config.args && server.config.args.length > 0) {
+      serverConfig.args = [...server.config.args];
+    }
+    
+    // Only add env if not empty
+    if (server.config.env && Object.keys(server.config.env).length > 0) {
+      serverConfig.env = {...server.config.env};
+    }
+    
+    config[key] = serverConfig;
   });
   
   return config;

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { execGitCommand } from './util.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 // Input schema for git_commit
 const GitCommitInputSchema = z.object({
@@ -26,22 +29,36 @@ async function commitChanges(args: any) {
     await execGitCommand('git add -A', params.repoPath);
     
     // For multiline commit messages, use a temporary file approach
-    const { stdout, stderr } = await execGitCommand(
-      `git commit -F- << 'EOF'
-${params.message}
-EOF`, 
-      params.repoPath
-    );
+    const tempDir = os.tmpdir();
+    const tempFile = path.join(tempDir, `git-commit-message-${Date.now()}.txt`);
     
-    if (stderr && !stderr.includes('create mode') && !stderr.includes('delete mode')) {
+    // Write the commit message to a temporary file
+    fs.writeFileSync(tempFile, params.message, 'utf8');
+    
+    try {
+      // Use the temporary file for the commit message
+      const { stdout, stderr } = await execGitCommand(
+        `git commit -F "${tempFile.replace(/\\/g, '/')}"`, 
+        params.repoPath
+      );
+      
+      if (stderr && !stderr.includes('create mode') && !stderr.includes('delete mode')) {
+        return {
+          content: [{ type: "text", text: `Warning: ${stderr}\n${stdout}` }]
+        };
+      }
+      
       return {
-        content: [{ type: "text", text: `Warning: ${stderr}\n${stdout}` }]
+        content: [{ type: "text", text: stdout }]
       };
+    } finally {
+      // Clean up the temporary file
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (e) {
+        // Ignore errors when deleting the temp file
+      }
     }
-    
-    return {
-      content: [{ type: "text", text: stdout }]
-    };
   } catch (error: any) {
     return {
       content: [{ type: "text", text: `Error executing git commit: ${error.message}` }],

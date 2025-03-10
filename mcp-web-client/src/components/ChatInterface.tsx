@@ -3,7 +3,7 @@ import ChatMessage from './ChatMessage';
 import MessageInput from './MessageInput';
 import { getModelResponse } from '../services/openRouterService';
 import { callMcpFunction } from '../services/mcpService';
-import { ensureCurrentChatSession, getCurrentChatSession, addMessageToChatSession, updateChatSession } from '../services/chatService';
+import { ensureCurrentChatSession, getCurrentChatSession, updateChatSession } from '../services/chatService';
 import { Message } from '../types';
 import '../styles/ChatInterface.css';
 
@@ -45,7 +45,6 @@ const ChatInterface: React.FC = () => {
     };
     setCurrentSession(updatedSession);
     updateChatSession(updatedSession);
-    addMessageToChatSession(currentSession.id, userMessage);
     
     setIsLoading(true);
     
@@ -73,7 +72,6 @@ const ChatInterface: React.FC = () => {
         };
         setCurrentSession(finalSession);
         updateChatSession(finalSession);
-        addMessageToChatSession(currentSession.id, assistantMessage);
       }
     } catch (error) {
       console.error('Error processing message:', error);
@@ -94,7 +92,6 @@ const ChatInterface: React.FC = () => {
       };
       setCurrentSession(errorSession);
       updateChatSession(errorSession);
-      addMessageToChatSession(currentSession.id, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +134,6 @@ const ChatInterface: React.FC = () => {
     };
     setCurrentSession(updatedSession);
     updateChatSession(updatedSession);
-    addMessageToChatSession(currentSession.id, assistantMessage);
   };
 
   return (

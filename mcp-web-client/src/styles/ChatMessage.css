@@ -1,9 +1,21 @@
 .message-wrapper {
   display: flex;
   margin-bottom: 1rem;
+  flex-direction: column;
+  position: relative;
 }
 
 .message-wrapper.user {
+  align-items: flex-end;
+}
+
+.message-timestamp-container {
+  width: 100%;
+  display: flex;
+  margin-bottom: 2px;
+}
+
+.message-wrapper.user .message-timestamp-container {
   justify-content: flex-end;
 }
 
@@ -40,9 +52,8 @@
 }
 
 .message-timestamp {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: #64748b;
-  margin-top: 0.5rem;
   text-align: right;
 }
 

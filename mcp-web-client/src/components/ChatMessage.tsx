@@ -12,6 +12,9 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, timestamp }) => {
   return (
     <div className={`message-wrapper ${role}`}>
+      <div className="message-timestamp-container">
+        <div className="message-timestamp">{formatTimestamp(timestamp)}</div>
+      </div>
       <div className={`message ${role}`}>
         <div className="message-content">
           {role === 'assistant' ? (
@@ -22,7 +25,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, timestamp }) =
             content
           )}
         </div>
-        <div className="message-timestamp">{formatTimestamp(timestamp)}</div>
       </div>
     </div>
   );

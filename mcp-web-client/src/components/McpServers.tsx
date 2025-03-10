@@ -25,7 +25,7 @@ const toSlug = (text: string): string => {
 const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) => {
   const [name, setName] = useState(server?.name || '');
   const [slug, setSlug] = useState(server?.name ? toSlug(server.name) : '');
-  const [command, setCommand] = useState(server?.config.command || 'npx');
+  const [command, setCommand] = useState(server?.config.command || 'nghx');
   const [args, setArgs] = useState<string[]>(server?.config.args || []);
   const [newArg, setNewArg] = useState('');
   const [envVars, setEnvVars] = useState<Record<string, string>>(server?.config.env || {});
@@ -131,8 +131,8 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
               value={command}
               onChange={(e) => setCommand(e.target.value)}
             >
-              <option value="npx">Node GitHub Executor</option>
-              <option value="python">Python GitHub Executor</option>
+              <option value="nghx">Node GitHub Executor</option>
+              <option value="pghx">Python GitHub Executor</option>
               <option value="custom">Custom</option>
             </select>
           </div>
@@ -177,24 +177,23 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
           <div className="form-group">
             <label>Environment Variables:</label>
             <div className="env-input-group">
-              <div className="env-inputs">
-                <input
-                  type="text"
-                  value={newEnvKey}
-                  onChange={(e) => setNewEnvKey(e.target.value)}
-                  onKeyPress={handleEnvKeyPress}
-                  placeholder="KEY"
-                  className="env-key-input"
-                />
-                <input
-                  type="text"
-                  value={newEnvValue}
-                  onChange={(e) => setNewEnvValue(e.target.value)}
-                  onKeyPress={handleEnvKeyPress}
-                  placeholder="VALUE"
-                  className="env-value-input"
-                />
-              </div>
+              <input
+                type="text"
+                value={`${newEnvKey}${newEnvKey && newEnvValue ? '=' : ''}${newEnvValue}`}
+                onChange={(e) => {
+                  const parts = e.target.value.split('=');
+                  if (parts.length > 1) {
+                    setNewEnvKey(parts[0]);
+                    setNewEnvValue(parts.slice(1).join('='));
+                  } else {
+                    setNewEnvKey(e.target.value);
+                    setNewEnvValue('');
+                  }
+                }}
+                onKeyPress={handleEnvKeyPress}
+                placeholder="KEY=VALUE"
+                className="env-input"
+              />
               <button 
                 type="button" 
                 className="btn-icon add" 

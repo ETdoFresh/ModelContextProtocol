@@ -263,6 +263,16 @@
   font-size: 1rem;
 }
 
+.form-group select {
+  appearance: menulist;
+}
+
+.form-group select option {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  padding: 8px;
+}
+
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
@@ -307,6 +317,31 @@
 .add-arg input {
   flex: 1;
   padding: 0.5rem;
+}
+
+.args-input-group {
+  display: flex;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.args-input-group input {
+  padding-right: 40px; /* Make room for the button */
+}
+
+.args-input-group .btn-icon.add {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-add {
@@ -423,12 +458,28 @@
   display: flex;
   margin-bottom: 10px;
   gap: 8px;
+  position: relative;
 }
 
 .env-inputs {
   display: flex;
   flex: 1;
   gap: 8px;
+}
+
+.env-input-group .btn-icon.add {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .env-key-input {
@@ -483,4 +534,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+}
+
+.env-input {
+  width: 100%;
+  padding: 10px;
+  padding-right: 40px; /* Make room for the button */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  font-size: 1rem;
 }

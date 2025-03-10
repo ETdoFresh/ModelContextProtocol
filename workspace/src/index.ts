@@ -28,10 +28,7 @@ const server = new Server(
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: Object.values(tools).map(tool => ({
-      name: tool.definition.name,
-      description: tool.definition.description
-    })),
+    tools: Object.values(tools).map(tool => tool.definition),
   };
 });
 

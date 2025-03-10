@@ -5,11 +5,12 @@ import '../styles/Sidebar.css';
 
 interface SidebarProps {
   isOpen: boolean;
+  toggleSidebar: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   return (
-    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+    <div className="sidebar">
       <nav className="sidebar-nav">
         <NavLink to="/mcp-view" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
           <FaServer />

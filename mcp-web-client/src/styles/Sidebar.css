@@ -1,10 +1,10 @@
 .sidebar {
   width: 250px;
-  background-color: var(--sidebar-bg);
+  background-color: var(--chat-background);
   height: 100%;
   overflow-y: auto;
-  transition: transform 0.3s ease;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
 .sidebar-nav {
@@ -24,12 +24,12 @@
 }
 
 .nav-link:hover {
-  background-color: var(--hover-color);
+  background-color: var(--border-color);
 }
 
 .nav-link.active {
-  background-color: var(--active-bg);
-  color: var(--active-color);
+  background-color: var(--primary-color);
+  color: white;
   font-weight: 500;
 }
 
@@ -40,13 +40,8 @@
 @media (max-width: 768px) {
   .sidebar {
     position: absolute;
-    z-index: 100;
     top: 60px; /* Adjust based on your header height */
     left: 0;
     height: calc(100% - 60px);
-  }
-  
-  .sidebar:not(.open) {
-    transform: translateX(-100%);
   }
 }

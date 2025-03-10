@@ -11,28 +11,12 @@ import '../styles/App.css';
 
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     // Initialize MCP clients when the app loads
     setupMcpClients().catch(error => {
       console.error('Failed to setup MCP clients:', error);
     });
-
-    // Add window resize listener to detect mobile/desktop
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      // Auto-open sidebar on desktop view
-      if (window.innerWidth >= 768) {
-        setIsSidebarOpen(true);
-      }
-    };
-
-    // Initial check
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleSidebar = () => {
@@ -43,9 +27,13 @@ const App: React.FC = () => {
     <Router>
       <div className="app">
         <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-        <div className="content-wrapper">
-          <Sidebar isOpen={isSidebarOpen} />
-          <main className={`main-content ${isSidebarOpen && !isMobile ? 'with-sidebar' : ''}`}>
+        <div className="app-body">
+          {isSidebarOpen && (
+            <div className="sidebar-container">
+              <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+            </div>
+          )}
+          <main className="main-content">
             <Routes>
               <Route path="/" element={<ChatInterface />} />
               <Route path="/mcp-view" element={<McpView />} />

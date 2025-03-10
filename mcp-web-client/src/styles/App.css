@@ -3,28 +3,34 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  background-color: var(--background-color);
 }
 
-.content-wrapper {
+.app-body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  background-color: var(--background-color);
+}
+
+.sidebar-container {
+  height: 100%;
+  background-color: var(--chat-background);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .main-content {
   flex: 1;
   overflow: auto;
-  transition: margin-left 0.3s ease;
-}
-
-.main-content.with-sidebar {
-  margin-left: 0;
-  width: calc(100% - 250px);
+  background-color: var(--background-color);
 }
 
 @media (max-width: 768px) {
-  .main-content.with-sidebar {
-    margin-left: 0;
-    width: 100%;
+  .sidebar-container {
+    position: absolute;
+    z-index: 100;
+    top: 60px; /* Adjust based on your header height */
+    left: 0;
+    height: calc(100% - 60px);
   }
 }

@@ -39,19 +39,35 @@ async function getDiff(args: any) {
       const stagedResult = await execGitCommand('git diff --cached', resolvedRepoPath);
       const unstagedResult = await execGitCommand('git diff', resolvedRepoPath);
       
+      // Get untracked files
+      const { stdout: untrackedOutput, stderr: untrackedStderr } = await execGitCommand('git ls-files --others --exclude-standard', resolvedRepoPath);
+      
       // Filter out warnings
       const filteredStagedStderr = filterGitWarnings(stagedResult.stderr);
       const filteredUnstagedStderr = filterGitWarnings(unstagedResult.stderr);
+      const filteredUntrackedStderr = filterGitWarnings(untrackedStderr);
       
       if (stagedResult.stdout.trim()) {
         result += "=== Staged Changes ===\n" + stagedResult.stdout + "\n";
       }
       
-      if (unstagedResult.stdout.trim()) {
-        result += "=== Unstaged Changes ===\n" + unstagedResult.stdout;
+      if (unstagedResult.stdout.trim() || untrackedOutput.trim()) {
+        result += "=== Unstaged Changes ===\n";
+        if (unstagedResult.stdout.trim()) {
+          result += unstagedResult.stdout;
+        }
+        
+        // Add untracked files to unstaged section
+        if (untrackedOutput.trim()) {
+          const untrackedFiles = untrackedOutput.split('\n').filter(Boolean);
+          if (untrackedFiles.length > 0) {
+            result += (unstagedResult.stdout.trim() ? "\n\n" : "") + "Untracked files:\n" + 
+                      untrackedFiles.map(file => `? ${file}`).join('\n');
+          }
+        }
       }
       
-      stderr = filteredStagedStderr || filteredUnstagedStderr;
+      stderr = filteredStagedStderr || filteredUnstagedStderr || filteredUntrackedStderr;
     } else {
       // Show only staged changes if they exist, otherwise show unstaged changes
       if (hasStagedChanges) {
@@ -60,8 +76,23 @@ async function getDiff(args: any) {
         stderr = filterGitWarnings(stderrOutput);
       } else {
         const { stdout, stderr: stderrOutput } = await execGitCommand('git diff', resolvedRepoPath);
+        const { stdout: untrackedOutput, stderr: untrackedStderr } = await execGitCommand('git ls-files --others --exclude-standard', resolvedRepoPath);
+        
         result = stdout;
+        
+        // Add untracked files to the output
+        if (untrackedOutput.trim()) {
+          const untrackedFiles = untrackedOutput.split('\n').filter(Boolean);
+          if (untrackedFiles.length > 0) {
+            result += (stdout.trim() ? "\n\n" : "") + "Untracked files:\n" + 
+                      untrackedFiles.map(file => `? ${file}`).join('\n');
+          }
+        }
+        
         stderr = filterGitWarnings(stderrOutput);
+        if (untrackedStderr && untrackedStderr.trim()) {
+          stderr = stderr ? stderr + "\n" + filterGitWarnings(untrackedStderr) : filterGitWarnings(untrackedStderr);
+        }
       }
     }
     

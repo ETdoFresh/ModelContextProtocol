@@ -196,9 +196,9 @@
 }
 
 .modal {
-  background-color: var(--bg-color-primary);
+  background-color: var(--background-color);
   border-radius: 8px;
-  padding: 1.5rem;
+  padding: 24px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -206,31 +206,31 @@
 
 .modal h3 {
   margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: var(--text-color-primary);
+  margin-bottom: 16px;
+  color: var(--text-color);
   font-size: 1.25rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-color-secondary);
+  margin-bottom: 8px;
+  color: var(--text-color);
   font-weight: 500;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: var(--bg-color-primary);
-  color: var(--text-color-primary);
-  font-size: 0.9rem;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  font-size: 1rem;
 }
 
 .form-group input:focus,
@@ -241,7 +241,7 @@
 }
 
 .disabled-input {
-  background-color: var(--bg-color-secondary);
+  background-color: var(--input-background);
   color: var(--text-color-tertiary);
   cursor: not-allowed;
 }

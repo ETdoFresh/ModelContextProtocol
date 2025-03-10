@@ -147,11 +147,12 @@ export const exportMcpConfig = (): Record<string, McpServerConfig> => {
   const config: Record<string, McpServerConfig> = {};
   
   servers.forEach(server => {
-    if (server.enabled) {
-      // Use the slug version of the name as the key
-      const key = toSlug(server.name);
-      config[key] = server.config;
-    }
+    // Use the slug version of the name as the key
+    const key = toSlug(server.name);
+    config[key] = {
+      ...server.config,
+      disabled: !server.enabled
+    };
   });
   
   return config;
@@ -162,12 +163,13 @@ export const importMcpConfig = (config: Record<string, McpServerConfig>): void =
   const servers: McpServerEntry[] = [];
   
   Object.entries(config).forEach(([key, serverConfig]) => {
+    const { disabled, ...configWithoutDisabled } = serverConfig;
     servers.push({
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
       name: key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, ' '),
-      config: serverConfig,
+      config: configWithoutDisabled,
       status: 'disconnected',
-      enabled: serverConfig.enabled !== false, // Default to true if not specified
+      enabled: !disabled, // Use the disabled property to set enabled
       createdAt: new Date(),
       updatedAt: new Date()
     });

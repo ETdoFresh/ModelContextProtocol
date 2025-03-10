@@ -17,7 +17,7 @@ export interface McpServerConfig {
   command: string;
   args: string[];
   env?: Record<string, string>;
-  enabled?: boolean;
+  disabled?: boolean;
 }
 
 export interface McpServerEntry {

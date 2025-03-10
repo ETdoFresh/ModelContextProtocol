@@ -2,31 +2,42 @@ import { McpConfig } from '../types';
 
 // Store the MCP server information
 let mcpServers: Record<string, any> = {};
-let mcpServerUrl = 'http://localhost:3001'; // Default URL
 
 // Load the MCP configuration
 async function loadMcpConfig(): Promise<McpConfig> {
   try {
+    console.log('Attempting to fetch MCP config from:', '/mcp_config.json');
     const response = await fetch('/mcp_config.json');
+    console.log('MCP config fetch response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to load MCP configuration');
+      throw new Error(`Failed to load MCP configuration: ${response.status} ${response.statusText}`);
     }
-    return await response.json();
+    
+    const config = await response.json();
+    console.log('Successfully loaded MCP config:', config);
+    return config;
   } catch (error) {
     console.error('Error loading MCP config:', error);
-    throw error;
+    // Return a default empty config instead of throwing
+    return { mcpServers: {} };
   }
 }
 
 export async function setupMcpClients() {
   try {
+    console.log('Setting up MCP clients...');
     const config = await loadMcpConfig();
     const { mcpServers: servers } = config;
     
     // Store the server configurations
     mcpServers = servers;
     
-    console.log('MCP servers configured:', Object.keys(mcpServers));
+    if (Object.keys(mcpServers).length > 0) {
+      console.log('MCP servers configured:', Object.keys(mcpServers));
+    } else {
+      console.warn('No valid MCP servers available after filtering');
+    }
   } catch (error) {
     console.error('Error setting up MCP clients:', error);
   }

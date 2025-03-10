@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { allTools, handleToolRequest } from "./tools/index.js";
+import { tools } from "./tools/index.js";
 import WorkspaceState from "./state.js";
 
 // Initialize workspace state
@@ -28,7 +28,10 @@ const server = new Server(
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: allTools,
+    tools: Object.values(tools).map(tool => ({
+      name: tool.definition.name,
+      description: tool.definition.description
+    })),
   };
 });
 
@@ -37,7 +40,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     
     // Handle the tool request (direct or forwarded)
-    return await handleToolRequest(name, args);
+    return await tools[name].function(args);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {

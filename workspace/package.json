@@ -8,7 +8,8 @@
     "workspace": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run fix-dist",
+    "fix-dist": "node scripts/fix-dist.js",
     "start": "node dist/index.js"
   },
   "dependencies": {

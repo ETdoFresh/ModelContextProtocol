@@ -1,0 +1,79 @@
+:root {
+  --primary-color: #2563eb;
+  --secondary-color: #1e40af;
+  --background-color: #f8fafc;
+  --chat-background: #ffffff;
+  --text-color: #1e293b;
+  --border-color: #e2e8f0;
+  --message-user-bg: #e9f2ff;
+  --message-assistant-bg: #f9fafb;
+  --code-bg: #f1f5f9;
+  --pre-bg: #1e293b;
+  --pre-color: #f8fafc;
+}
+
+:root.dark-mode {
+  --primary-color: #3b82f6;
+  --secondary-color: #60a5fa;
+  --background-color: #111827;
+  --chat-background: #1f2937;
+  --text-color: #e5e7eb;
+  --border-color: #374151;
+  --message-user-bg: #1e3a8a;
+  --message-assistant-bg: #1f2937;
+  --code-bg: #2d3748;
+  --pre-bg: #0f172a;
+  --pre-color: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  background-color: var(--code-bg);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  background-color: var(--pre-bg);
+  color: var(--pre-color);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

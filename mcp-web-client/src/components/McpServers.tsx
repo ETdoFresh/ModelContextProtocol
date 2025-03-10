@@ -1,20 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { FaTrash, FaPlus, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaTrash, FaPlus, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronRight, FaEdit } from 'react-icons/fa';
 import { BsCircleFill } from 'react-icons/bs';
-import { getMcpServers, createMcpServer, deleteMcpServer, toggleMcpServerEnabled, initializeMcpServers } from '../services/mcpServerService';
+import { getMcpServers, createMcpServer, deleteMcpServer, toggleMcpServerEnabled, initializeMcpServers, updateMcpServer } from '../services/mcpServerService';
 import { McpServerEntry, McpServerConfig } from '../types';
 import '../styles/McpServers.css';
 
-interface AddServerModalProps {
-  onSave: (name: string, config: McpServerConfig) => void;
+interface ServerModalProps {
+  server?: McpServerEntry;
+  onSave: (name: string, config: McpServerConfig, serverId?: string) => void;
   onCancel: () => void;
 }
 
-const AddServerModal: React.FC<AddServerModalProps> = ({ onSave, onCancel }) => {
-  const [name, setName] = useState('');
-  const [command, setCommand] = useState('npx');
-  const [args, setArgs] = useState<string[]>([]);
+// Helper function to convert a string to a slug
+const toSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')     // Replace spaces with -
+    .replace(/[^a-z0-9\-]/g, '') // Remove all non-alphanumeric chars except -
+    .replace(/\-\-+/g, '-')   // Replace multiple - with single -
+    .replace(/^-+/, '')       // Trim - from start of text
+    .replace(/-+$/, '');      // Trim - from end of text
+};
+
+const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) => {
+  const [name, setName] = useState(server?.name || '');
+  const [slug, setSlug] = useState(server?.name ? toSlug(server.name) : '');
+  const [command, setCommand] = useState(server?.config.command || 'npx');
+  const [args, setArgs] = useState<string[]>(server?.config.args || []);
   const [newArg, setNewArg] = useState('');
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setName(newName);
+    setSlug(toSlug(newName));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +42,10 @@ const AddServerModal: React.FC<AddServerModalProps> = ({ onSave, onCancel }) => 
     const config: McpServerConfig = {
       command,
       args: [...args],
-      env: {}
+      env: server?.config.env || {}
     };
     
-    onSave(name, config);
+    onSave(name, config, server?.id);
   };
 
   const addArg = () => {
@@ -46,20 +65,23 @@ const AddServerModal: React.FC<AddServerModalProps> = ({ onSave, onCancel }) => 
     const selectedCommand = e.target.value;
     setCommand(selectedCommand);
     
-    // Set default args based on command
-    if (selectedCommand === 'npx') {
-      setArgs(['-y', '@modelcontextprotocol/server-github']);
-    } else if (selectedCommand === 'python') {
-      setArgs(['-m', 'mcp.server']);
-    } else {
-      setArgs([]);
+    // Only set default args if this is a new server or if the command has changed
+    if (!server || server.config.command !== selectedCommand) {
+      // Set default args based on command
+      if (selectedCommand === 'npx') {
+        setArgs(['-y', '@modelcontextprotocol/server-github']);
+      } else if (selectedCommand === 'python') {
+        setArgs(['-m', 'mcp.server']);
+      } else {
+        setArgs([]);
+      }
     }
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <h3>Add MCP Server</h3>
+        <h3>{server ? 'Edit MCP Server' : 'Add MCP Server'}</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Name</label>
@@ -67,9 +89,20 @@ const AddServerModal: React.FC<AddServerModalProps> = ({ onSave, onCancel }) => 
               type="text"
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
               placeholder="e.g., GitHub"
               autoFocus
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="slug">Slug (auto-generated)</label>
+            <input
+              type="text"
+              id="slug"
+              value={slug}
+              disabled
+              className="disabled-input"
             />
           </div>
           
@@ -133,7 +166,8 @@ const AddServerModal: React.FC<AddServerModalProps> = ({ onSave, onCancel }) => 
 
 const McpServers: React.FC = () => {
   const [servers, setServers] = useState<McpServerEntry[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingServer, setEditingServer] = useState<McpServerEntry | undefined>(undefined);
   const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -149,10 +183,31 @@ const McpServers: React.FC = () => {
     setServers(loadedServers);
   };
 
-  const handleCreateServer = (name: string, config: McpServerConfig) => {
-    createMcpServer(name, config);
-    setShowAddModal(false);
+  const handleSaveServer = (name: string, config: McpServerConfig, serverId?: string) => {
+    if (serverId) {
+      // Update existing server
+      const server = servers.find(s => s.id === serverId);
+      if (server) {
+        const updatedServer = {
+          ...server,
+          name,
+          config
+        };
+        updateMcpServer(updatedServer);
+      }
+    } else {
+      // Create new server
+      createMcpServer(name, config);
+    }
+    
+    setShowModal(false);
+    setEditingServer(undefined);
     loadServers();
+  };
+
+  const handleEditServer = (server: McpServerEntry) => {
+    setEditingServer(server);
+    setShowModal(true);
   };
 
   const handleDeleteServer = (serverId: string) => {
@@ -186,28 +241,17 @@ const McpServers: React.FC = () => {
     }
   };
 
-  const formatDate = (date: Date) => {
-    if (!(date instanceof Date) || isNaN(date.getTime())) {
-      date = new Date(date);
-      if (isNaN(date.getTime())) {
-        return 'Invalid date';
-      }
-    }
-    
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
-
   return (
     <div className="mcp-servers-container">
       <div className="mcp-servers-header">
         <h2>MCP Servers</h2>
-        <button className="btn btn-primary create-server" onClick={() => setShowAddModal(true)}>
+        <button 
+          className="btn btn-primary create-server" 
+          onClick={() => {
+            setEditingServer(undefined);
+            setShowModal(true);
+          }}
+        >
           <FaPlus /> New MCP Server
         </button>
       </div>
@@ -234,9 +278,15 @@ const McpServers: React.FC = () => {
                 </div>
                 <div className="server-meta">
                   <span className="server-command">{server.config.command} {server.config.args.join(' ')}</span>
-                  <span className="server-date">{formatDate(server.updatedAt)}</span>
                 </div>
                 <div className="server-actions">
+                  <button 
+                    className="btn btn-icon edit" 
+                    onClick={() => handleEditServer(server)}
+                    aria-label="Edit server"
+                  >
+                    <FaEdit />
+                  </button>
                   <button 
                     className="btn btn-icon toggle" 
                     onClick={() => handleToggleEnabled(server.id)}
@@ -264,10 +314,14 @@ const McpServers: React.FC = () => {
         </div>
       )}
 
-      {showAddModal && (
-        <AddServerModal
-          onSave={handleCreateServer}
-          onCancel={() => setShowAddModal(false)}
+      {showModal && (
+        <ServerModal
+          server={editingServer}
+          onSave={handleSaveServer}
+          onCancel={() => {
+            setShowModal(false);
+            setEditingServer(undefined);
+          }}
         />
       )}
     </div>

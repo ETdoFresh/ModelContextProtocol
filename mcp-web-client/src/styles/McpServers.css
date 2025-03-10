@@ -240,6 +240,12 @@
   box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
 }
 
+.disabled-input {
+  background-color: var(--bg-color-secondary);
+  color: var(--text-color-tertiary);
+  cursor: not-allowed;
+}
+
 .args-list {
   display: flex;
   flex-direction: column;
@@ -321,4 +327,8 @@
 
 .btn-secondary:hover {
   background-color: var(--bg-color-hover);
+}
+
+.btn-icon.edit:hover {
+  color: var(--primary-color);
 }

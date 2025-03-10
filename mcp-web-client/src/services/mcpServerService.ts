@@ -3,6 +3,17 @@ import { McpServerEntry, McpServerConfig } from '../types';
 // Local storage key for MCP servers
 const MCP_SERVERS_KEY = 'mcp-servers';
 
+// Helper function to convert a string to a slug
+const toSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')     // Replace spaces with -
+    .replace(/[^a-z0-9\-]/g, '') // Remove all non-alphanumeric chars except -
+    .replace(/\-\-+/g, '-')   // Replace multiple - with single -
+    .replace(/^-+/, '')       // Trim - from start of text
+    .replace(/-+$/, '');      // Trim - from end of text
+};
+
 // Helper function to convert string dates back to Date objects
 const parseDates = (server: any): McpServerEntry => {
   return {
@@ -38,6 +49,7 @@ export const saveMcpServers = (servers: McpServerEntry[]): void => {
 // Create a new MCP server
 export const createMcpServer = (name: string, config: McpServerConfig): McpServerEntry => {
   const servers = getMcpServers();
+  const slug = toSlug(name);
   
   const newServer: McpServerEntry = {
     id: Date.now().toString(),
@@ -136,7 +148,9 @@ export const exportMcpConfig = (): Record<string, McpServerConfig> => {
   
   servers.forEach(server => {
     if (server.enabled) {
-      config[server.name.toLowerCase()] = server.config;
+      // Use the slug version of the name as the key
+      const key = toSlug(server.name);
+      config[key] = server.config;
     }
   });
   
@@ -147,10 +161,10 @@ export const exportMcpConfig = (): Record<string, McpServerConfig> => {
 export const importMcpConfig = (config: Record<string, McpServerConfig>): void => {
   const servers: McpServerEntry[] = [];
   
-  Object.entries(config).forEach(([name, serverConfig]) => {
+  Object.entries(config).forEach(([key, serverConfig]) => {
     servers.push({
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-      name,
+      name: key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, ' '),
       config: serverConfig,
       status: 'disconnected',
       enabled: serverConfig.enabled !== false, // Default to true if not specified

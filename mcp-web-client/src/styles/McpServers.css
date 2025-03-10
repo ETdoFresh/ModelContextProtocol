@@ -332,3 +332,50 @@
 .btn-icon.edit:hover {
   color: var(--primary-color);
 }
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.json-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-color-secondary);
+  color: var(--text-color);
+}
+
+.json-btn:hover {
+  background-color: var(--bg-color-hover);
+}
+
+.json-modal {
+  max-width: 600px;
+}
+
+.json-content {
+  margin-bottom: 20px;
+}
+
+.json-textarea {
+  width: 100%;
+  height: 300px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  font-family: monospace;
+  font-size: 14px;
+  resize: none;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ChatInterface from './ChatInterface';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import McpView from './McpView';
 import ChatSessions from './ChatSessions';
 import McpServers from './McpServers';
 import Settings from './Settings';
@@ -37,7 +36,6 @@ const App: React.FC = () => {
           <main className="main-content">
             <Routes>
               <Route path="/" element={<ChatInterface />} />
-              <Route path="/mcp-view" element={<McpView />} />
               <Route path="/chat-sessions" element={<ChatSessions />} />
               <Route path="/mcp-servers" element={<McpServers />} />
               <Route path="/settings" element={<Settings />} />

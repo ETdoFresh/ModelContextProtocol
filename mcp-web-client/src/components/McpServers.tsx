@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { FaTrash, FaPlus, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronRight, FaEdit } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaTrash, FaPlus, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronRight, FaEdit, FaCode, FaCopy } from 'react-icons/fa';
 import { BsCircleFill } from 'react-icons/bs';
-import { getMcpServers, createMcpServer, deleteMcpServer, toggleMcpServerEnabled, initializeMcpServers, updateMcpServer } from '../services/mcpServerService';
+import { getMcpServers, createMcpServer, deleteMcpServer, toggleMcpServerEnabled, initializeMcpServers, updateMcpServer, exportMcpConfig } from '../services/mcpServerService';
 import { McpServerEntry, McpServerConfig } from '../types';
 import '../styles/McpServers.css';
 
@@ -56,25 +56,15 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
   };
 
   const removeArg = (index: number) => {
-    const updatedArgs = [...args];
-    updatedArgs.splice(index, 1);
-    setArgs(updatedArgs);
+    const newArgs = [...args];
+    newArgs.splice(index, 1);
+    setArgs(newArgs);
   };
 
-  const handleCommandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCommand = e.target.value;
-    setCommand(selectedCommand);
-    
-    // Only set default args if this is a new server or if the command has changed
-    if (!server || server.config.command !== selectedCommand) {
-      // Set default args based on command
-      if (selectedCommand === 'npx') {
-        setArgs(['-y', '@modelcontextprotocol/server-github']);
-      } else if (selectedCommand === 'python') {
-        setArgs(['-m', 'mcp.server']);
-      } else {
-        setArgs([]);
-      }
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addArg();
     }
   };
 
@@ -84,81 +74,132 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
         <h3>{server ? 'Edit MCP Server' : 'Add MCP Server'}</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Name</label>
+            <label htmlFor="name">Name:</label>
             <input
               type="text"
               id="name"
               value={name}
               onChange={handleNameChange}
               placeholder="e.g., GitHub"
-              autoFocus
+              required
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="slug">Slug (auto-generated)</label>
+            <label htmlFor="slug">Slug:</label>
             <input
               type="text"
               id="slug"
               value={slug}
-              disabled
               className="disabled-input"
+              disabled
+              placeholder="Auto-generated from name"
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="command">Command</label>
+            <label htmlFor="command">Command:</label>
             <select
               id="command"
               value={command}
-              onChange={handleCommandChange}
+              onChange={(e) => setCommand(e.target.value)}
             >
-              <option value="npx">Node GitHub Executor (nghx)</option>
-              <option value="python">Python GitHub Executor (pghx)</option>
+              <option value="npx">Node GitHub Executor</option>
+              <option value="python">Python GitHub Executor</option>
               <option value="custom">Custom</option>
             </select>
           </div>
           
           <div className="form-group">
-            <label>Arguments</label>
+            <label>Arguments:</label>
+            <div className="args-input-group">
+              <input
+                type="text"
+                value={newArg}
+                onChange={(e) => setNewArg(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Add an argument"
+              />
+              <button 
+                type="button" 
+                className="btn-icon add" 
+                onClick={addArg}
+                aria-label="Add argument"
+              >
+                <FaPlus />
+              </button>
+            </div>
+            
             <div className="args-list">
               {args.map((arg, index) => (
                 <div key={index} className="arg-item">
                   <span>{arg}</span>
                   <button 
                     type="button" 
-                    className="btn-icon" 
+                    className="btn-icon remove" 
                     onClick={() => removeArg(index)}
+                    aria-label="Remove argument"
                   >
                     <FaTrash />
                   </button>
                 </div>
               ))}
-              
-              <div className="add-arg">
-                <input
-                  type="text"
-                  value={newArg}
-                  onChange={(e) => setNewArg(e.target.value)}
-                  placeholder="Add new argument"
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addArg())}
-                />
-                <button type="button" className="btn-add" onClick={addArg}>
-                  Add
-                </button>
-              </div>
             </div>
           </div>
           
           <div className="modal-actions">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={!name.trim() || args.length === 0}>
-              Save
-            </button>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+            <button type="submit" className="btn btn-primary">Save</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+interface JsonModalProps {
+  onClose: () => void;
+}
+
+const JsonModal: React.FC<JsonModalProps> = ({ onClose }) => {
+  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const jsonConfig = JSON.stringify(exportMcpConfig(), null, 2);
+  
+  const handleCopy = () => {
+    if (textareaRef.current) {
+      textareaRef.current.select();
+      document.execCommand('copy');
+      setCopied(true);
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  
+  return (
+    <div className="modal-overlay">
+      <div className="modal json-modal">
+        <h3>MCP Servers JSON Configuration</h3>
+        <div className="json-content">
+          <textarea 
+            ref={textareaRef}
+            readOnly 
+            value={jsonConfig}
+            className="json-textarea"
+          />
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Close</button>
+          <button 
+            type="button" 
+            className="btn btn-primary copy-btn" 
+            onClick={handleCopy}
+          >
+            {copied ? 'Copied!' : <><FaCopy /> Copy to Clipboard</>}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -167,6 +208,7 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
 const McpServers: React.FC = () => {
   const [servers, setServers] = useState<McpServerEntry[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showJsonModal, setShowJsonModal] = useState(false);
   const [editingServer, setEditingServer] = useState<McpServerEntry | undefined>(undefined);
   const [expandedServers, setExpandedServers] = useState<Record<string, boolean>>({});
 
@@ -245,15 +287,24 @@ const McpServers: React.FC = () => {
     <div className="mcp-servers-container">
       <div className="mcp-servers-header">
         <h2>MCP Servers</h2>
-        <button 
-          className="btn btn-primary create-server" 
-          onClick={() => {
-            setEditingServer(undefined);
-            setShowModal(true);
-          }}
-        >
-          <FaPlus /> New MCP Server
-        </button>
+        <div className="header-buttons">
+          <button 
+            className="btn btn-secondary json-btn" 
+            onClick={() => setShowJsonModal(true)}
+            title="View JSON Configuration"
+          >
+            <FaCode /> JSON
+          </button>
+          <button 
+            className="btn btn-primary create-server" 
+            onClick={() => {
+              setEditingServer(undefined);
+              setShowModal(true);
+            }}
+          >
+            <FaPlus /> New MCP Server
+          </button>
+        </div>
       </div>
 
       {servers.length === 0 ? (
@@ -274,34 +325,39 @@ const McpServers: React.FC = () => {
                   >
                     {expandedServers[server.id] ? <FaChevronDown /> : <FaChevronRight />}
                   </button>
-                  <h3 className="server-title">{server.name}</h3>
+                  <h3>{server.name}</h3>
                 </div>
-                <div className="server-meta">
-                  <span className="server-command">{server.config.command} {server.config.args.join(' ')}</span>
-                </div>
+                
                 <div className="server-actions">
                   <button 
-                    className="btn btn-icon edit" 
+                    className="btn-icon edit" 
                     onClick={() => handleEditServer(server)}
                     aria-label="Edit server"
                   >
                     <FaEdit />
                   </button>
                   <button 
-                    className="btn btn-icon toggle" 
+                    className="btn-icon toggle" 
                     onClick={() => handleToggleEnabled(server.id)}
                     aria-label={server.enabled ? 'Disable server' : 'Enable server'}
                   >
-                    {server.enabled ? <FaToggleOn className="toggle-on" /> : <FaToggleOff className="toggle-off" />}
+                    {server.enabled ? <FaToggleOn /> : <FaToggleOff />}
                   </button>
                   <button 
-                    className="btn btn-icon delete" 
+                    className="btn-icon delete" 
                     onClick={() => handleDeleteServer(server.id)}
                     aria-label="Delete server"
                   >
                     <FaTrash />
                   </button>
                 </div>
+              </div>
+              
+              <div className="server-meta">
+                <span className="command">{server.config.command}</span>
+                {server.config.args.length > 0 && (
+                  <span className="args">{server.config.args.join(' ')}</span>
+                )}
               </div>
               
               {expandedServers[server.id] && (
@@ -313,16 +369,20 @@ const McpServers: React.FC = () => {
           ))}
         </div>
       )}
-
+      
       {showModal && (
-        <ServerModal
-          server={editingServer}
-          onSave={handleSaveServer}
+        <ServerModal 
+          server={editingServer} 
+          onSave={handleSaveServer} 
           onCancel={() => {
             setShowModal(false);
             setEditingServer(undefined);
-          }}
+          }} 
         />
+      )}
+      
+      {showJsonModal && (
+        <JsonModal onClose={() => setShowJsonModal(false)} />
       )}
     </div>
   );

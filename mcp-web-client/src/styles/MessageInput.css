@@ -46,13 +46,25 @@
   transition: background-color 0.2s ease;
 }
 
+:root.dark-mode .send-button {
+  background-color: #0f172a; /* Much darker color for dark mode */
+}
+
 .send-button:hover {
   background-color: var(--secondary-color);
+}
+
+:root.dark-mode .send-button:hover {
+  background-color: #1e3a8a; /* Darker hover color for dark mode */
 }
 
 .send-button:disabled {
   background-color: #cbd5e1;
   cursor: not-allowed;
+}
+
+:root.dark-mode .send-button:disabled {
+  background-color: #334155; /* Darker disabled color for dark mode */
 }
 
 .send-button svg {

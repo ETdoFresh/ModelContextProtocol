@@ -25,9 +25,11 @@ async function commitChanges(args: any) {
     // Add all changes
     await execGitCommand('git add -A', params.repoPath);
     
-    // Commit with the provided message
+    // For multiline commit messages, use a temporary file approach
     const { stdout, stderr } = await execGitCommand(
-      `git commit -m "${params.message.replace(/"/g, '\\"')}"`, 
+      `git commit -F- << 'EOF'
+${params.message}
+EOF`, 
       params.repoPath
     );
     

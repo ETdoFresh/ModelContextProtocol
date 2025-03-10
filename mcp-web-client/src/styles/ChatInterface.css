@@ -70,6 +70,21 @@
   animation-delay: 0.4s;
 }
 
+.session-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.session-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 0.6;

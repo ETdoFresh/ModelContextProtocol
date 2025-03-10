@@ -5,6 +5,14 @@ export interface Message {
   timestamp: Date;
 }
 
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface McpServerConfig {
   command: string;
   args: string[];

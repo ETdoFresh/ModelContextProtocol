@@ -3,17 +3,24 @@ import ChatMessage from './ChatMessage';
 import MessageInput from './MessageInput';
 import { getModelResponse } from '../services/openRouterService';
 import { callMcpFunction } from '../services/mcpService';
+import { ensureCurrentChatSession, getCurrentChatSession, addMessageToChatSession, updateChatSession } from '../services/chatService';
 import { Message } from '../types';
 import '../styles/ChatInterface.css';
 
 const ChatInterface: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [currentSession, setCurrentSession] = useState(ensureCurrentChatSession());
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
+    // Ensure we have a current session when component mounts
+    const session = ensureCurrentChatSession();
+    setCurrentSession(session);
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [currentSession.messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,7 +37,16 @@ const ChatInterface: React.FC = () => {
       timestamp: new Date(),
     };
     
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    // Add message to current session
+    const updatedSession = {
+      ...currentSession,
+      messages: [...currentSession.messages, userMessage],
+      updatedAt: new Date()
+    };
+    setCurrentSession(updatedSession);
+    updateChatSession(updatedSession);
+    addMessageToChatSession(currentSession.id, userMessage);
+    
     setIsLoading(true);
     
     try {
@@ -39,7 +55,7 @@ const ChatInterface: React.FC = () => {
         await handleMcpCommand(content.substring(5));
       } else {
         // Get response from model
-        const response = await getModelResponse(content, messages);
+        const response = await getModelResponse(content, currentSession.messages);
         
         // Add assistant message
         const assistantMessage: Message = {
@@ -49,7 +65,15 @@ const ChatInterface: React.FC = () => {
           timestamp: new Date(),
         };
         
-        setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+        // Update session with assistant message
+        const finalSession = {
+          ...updatedSession,
+          messages: [...updatedSession.messages, assistantMessage],
+          updatedAt: new Date()
+        };
+        setCurrentSession(finalSession);
+        updateChatSession(finalSession);
+        addMessageToChatSession(currentSession.id, assistantMessage);
       }
     } catch (error) {
       console.error('Error processing message:', error);
@@ -62,7 +86,15 @@ const ChatInterface: React.FC = () => {
         timestamp: new Date(),
       };
       
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      // Update session with error message
+      const errorSession = {
+        ...updatedSession,
+        messages: [...updatedSession.messages, errorMessage],
+        updatedAt: new Date()
+      };
+      setCurrentSession(errorSession);
+      updateChatSession(errorSession);
+      addMessageToChatSession(currentSession.id, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -97,19 +129,30 @@ const ChatInterface: React.FC = () => {
       timestamp: new Date(),
     };
     
-    setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+    // Update current session with the result
+    const updatedSession = {
+      ...currentSession,
+      messages: [...currentSession.messages, assistantMessage],
+      updatedAt: new Date()
+    };
+    setCurrentSession(updatedSession);
+    updateChatSession(updatedSession);
+    addMessageToChatSession(currentSession.id, assistantMessage);
   };
 
   return (
     <div className="chat-container">
+      <div className="session-header">
+        <h2>{currentSession.title}</h2>
+      </div>
       <div className="messages-container">
-        {messages.length === 0 ? (
+        {currentSession.messages.length === 0 ? (
           <div className="empty-state">
             <p>Send a message to start the conversation</p>
             <p className="hint">Use /mcp serverName.functionName(params) to call MCP functions</p>
           </div>
         ) : (
-          messages.map((message) => (
+          currentSession.messages.map((message) => (
             <ChatMessage
               key={message.id}
               role={message.role}

@@ -105,10 +105,12 @@
 .server-meta {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-  margin: 0 1rem;
-  flex: 2;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  text-align: center;
+  overflow: hidden;
+  color: var(--text-color-secondary);
 }
 
 .server-command {
@@ -119,6 +121,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 300px;
+}
+
+.command, .args {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 16px;
 }
 
 .server-date {
@@ -378,4 +388,70 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.env-input-group {
+  display: flex;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.env-inputs {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+}
+
+.env-key-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.env-value-input {
+  flex: 2;
+}
+
+.env-vars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.env-var-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--input-background);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.env-var-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.env-key {
+  font-weight: 500;
+  color: var(--primary-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.env-equals {
+  color: var(--text-color-tertiary);
+}
+
+.env-value {
+  color: var(--text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }

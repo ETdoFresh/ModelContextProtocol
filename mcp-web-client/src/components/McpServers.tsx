@@ -28,6 +28,9 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
   const [command, setCommand] = useState(server?.config.command || 'npx');
   const [args, setArgs] = useState<string[]>(server?.config.args || []);
   const [newArg, setNewArg] = useState('');
+  const [envVars, setEnvVars] = useState<Record<string, string>>(server?.config.env || {});
+  const [newEnvKey, setNewEnvKey] = useState('');
+  const [newEnvValue, setNewEnvValue] = useState('');
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
@@ -42,7 +45,7 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
     const config: McpServerConfig = {
       command,
       args: [...args],
-      env: server?.config.env || {}
+      env: {...envVars}
     };
     
     onSave(name, config, server?.id);
@@ -65,6 +68,30 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
     if (e.key === 'Enter') {
       e.preventDefault();
       addArg();
+    }
+  };
+
+  const addEnvVar = () => {
+    if (newEnvKey.trim()) {
+      setEnvVars(prev => ({
+        ...prev,
+        [newEnvKey.trim()]: newEnvValue
+      }));
+      setNewEnvKey('');
+      setNewEnvValue('');
+    }
+  };
+
+  const removeEnvVar = (key: string) => {
+    const newEnvVars = {...envVars};
+    delete newEnvVars[key];
+    setEnvVars(newEnvVars);
+  };
+
+  const handleEnvKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addEnvVar();
     }
   };
 
@@ -139,6 +166,58 @@ const ServerModal: React.FC<ServerModalProps> = ({ server, onSave, onCancel }) =
                     className="btn-icon remove" 
                     onClick={() => removeArg(index)}
                     aria-label="Remove argument"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Environment Variables:</label>
+            <div className="env-input-group">
+              <div className="env-inputs">
+                <input
+                  type="text"
+                  value={newEnvKey}
+                  onChange={(e) => setNewEnvKey(e.target.value)}
+                  onKeyPress={handleEnvKeyPress}
+                  placeholder="KEY"
+                  className="env-key-input"
+                />
+                <input
+                  type="text"
+                  value={newEnvValue}
+                  onChange={(e) => setNewEnvValue(e.target.value)}
+                  onKeyPress={handleEnvKeyPress}
+                  placeholder="VALUE"
+                  className="env-value-input"
+                />
+              </div>
+              <button 
+                type="button" 
+                className="btn-icon add" 
+                onClick={addEnvVar}
+                aria-label="Add environment variable"
+              >
+                <FaPlus />
+              </button>
+            </div>
+            
+            <div className="env-vars-list">
+              {Object.entries(envVars).map(([key, value]) => (
+                <div key={key} className="env-var-item">
+                  <div className="env-var-content">
+                    <span className="env-key">{key}</span>
+                    <span className="env-equals">=</span>
+                    <span className="env-value">{value}</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-icon remove" 
+                    onClick={() => removeEnvVar(key)}
+                    aria-label="Remove environment variable"
                   >
                     <FaTrash />
                   </button>

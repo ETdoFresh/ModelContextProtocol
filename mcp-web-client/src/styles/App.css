@@ -27,10 +27,11 @@
 
 @media (max-width: 768px) {
   .sidebar-container {
-    position: absolute;
+    position: fixed;
     z-index: 100;
     top: 60px; /* Adjust based on your header height */
     left: 0;
     height: calc(100% - 60px);
+    width: 100%;
   }
 }

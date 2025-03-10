@@ -40,8 +40,9 @@
 @media (max-width: 768px) {
   .sidebar {
     position: absolute;
-    top: 60px; /* Adjust based on your header height */
+    top: 0;
     left: 0;
-    height: calc(100% - 60px);
+    width: 100%;
+    height: 100%;
   }
 }

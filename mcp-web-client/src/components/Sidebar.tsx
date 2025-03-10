@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FaComments, FaCog, FaServer, FaComment } from 'react-icons/fa';
+import { FaComments, FaCog, FaServer, FaComment, FaNetworkWired } from 'react-icons/fa';
 import '../styles/Sidebar.css';
 
 interface SidebarProps {
@@ -19,6 +19,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <NavLink to="/mcp-view" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
           <FaServer />
           <span>View MCPs</span>
+        </NavLink>
+        <NavLink to="/mcp-servers" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          <FaNetworkWired />
+          <span>MCP Servers</span>
         </NavLink>
         <NavLink to="/chat-sessions" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
           <FaComments />

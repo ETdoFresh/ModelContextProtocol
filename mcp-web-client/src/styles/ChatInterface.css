@@ -89,15 +89,13 @@
 .workspace-info {
   display: flex;
   flex-direction: column;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   gap: 0.25rem;
 }
 
 .workspace-info span {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: inline-block;
 }
 
 @media (min-width: 768px) {

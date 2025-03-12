@@ -5,7 +5,8 @@ import { getModelResponse } from '../services/openRouterService';
 import { callMcpFunction } from '../services/mcpService';
 import { ensureCurrentChatSession, getCurrentChatSession, updateChatSession } from '../services/chatService';
 import { ensureCurrentWorkspace, getCurrentWorkspace } from '../services/workspaceService';
-import { Message } from '../types';
+import { WORKSPACE_CHANGE_EVENT } from './WorkspaceSelector';
+import { Message, Workspace } from '../types';
 import '../styles/ChatInterface.css';
 
 const ChatInterface: React.FC = () => {
@@ -19,9 +20,43 @@ const ChatInterface: React.FC = () => {
     const session = ensureCurrentChatSession();
     const workspace = ensureCurrentWorkspace();
     
-    setCurrentSession(session);
+    // Update the session with the current workspace info
+    const updatedSession = {
+      ...session,
+      workspaceId: workspace.id,
+      currentWorkingDirectory: workspace.rootPath
+    };
+    
+    setCurrentSession(updatedSession);
+    updateChatSession(updatedSession);
     setCurrentWorkspace(workspace);
   }, []);
+
+  useEffect(() => {
+    // Listen for workspace change events
+    const handleWorkspaceChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const workspace = customEvent.detail.workspace as Workspace;
+      
+      setCurrentWorkspace(workspace);
+      
+      // Update the current session with the new workspace info
+      const updatedSession = {
+        ...currentSession,
+        workspaceId: workspace.id,
+        currentWorkingDirectory: workspace.rootPath
+      };
+      
+      setCurrentSession(updatedSession);
+      updateChatSession(updatedSession);
+    };
+    
+    document.addEventListener(WORKSPACE_CHANGE_EVENT, handleWorkspaceChange);
+    
+    return () => {
+      document.removeEventListener(WORKSPACE_CHANGE_EVENT, handleWorkspaceChange);
+    };
+  }, [currentSession]);
 
   useEffect(() => {
     scrollToBottom();
@@ -106,7 +141,7 @@ const ChatInterface: React.FC = () => {
 
   const handleMcpCommand = async (command: string) => {
     // Simple parsing of MCP commands in format: serverName.functionName(params)
-    const match = command.match(/^([\\w-]+)\\.([\\w-]+)(?:\\((.*)\\))?$/);
+    const match = command.match(/^([\w-]+)\.([\w-]+)(?:\((.+)\))?$/);
     
     if (!match) {
       throw new Error('Invalid MCP command format. Use: serverName.functionName(params)');
@@ -129,7 +164,7 @@ const ChatInterface: React.FC = () => {
     const assistantMessage: Message = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
-      content: '```json\\n' + JSON.stringify(result, null, 2) + '\\n```',
+      content: '```json\n' + JSON.stringify(result, null, 2) + '\n```',
       timestamp: new Date(),
     };
     

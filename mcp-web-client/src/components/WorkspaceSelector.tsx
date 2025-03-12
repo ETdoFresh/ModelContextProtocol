@@ -4,6 +4,16 @@ import { Workspace } from '../types';
 import { FaFolder, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import '../styles/WorkspaceSelector.css';
 
+// Define a custom event for workspace changes
+export const WORKSPACE_CHANGE_EVENT = 'workspace-change';
+
+// Custom event type for TypeScript
+interface WorkspaceChangeEvent extends CustomEvent {
+  detail: {
+    workspace: Workspace;
+  };
+}
+
 const WorkspaceSelector: React.FC = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspaceState] = useState<Workspace | undefined>(undefined);
@@ -37,6 +47,13 @@ const WorkspaceSelector: React.FC = () => {
     setCurrentWorkspace(workspace.id);
     setCurrentWorkspaceState(workspace);
     setIsOpen(false);
+    
+    // Dispatch a custom event to notify other components of the workspace change
+    const workspaceChangeEvent = new CustomEvent(WORKSPACE_CHANGE_EVENT, { 
+      detail: { workspace } 
+    }) as WorkspaceChangeEvent;
+    
+    document.dispatchEvent(workspaceChangeEvent);
   };
 
   if (!currentWorkspace) {

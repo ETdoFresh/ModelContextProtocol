@@ -11,6 +11,8 @@ export interface ChatSession {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  workspaceId?: string;
+  currentWorkingDirectory?: string;
 }
 
 export interface McpServerConfig {

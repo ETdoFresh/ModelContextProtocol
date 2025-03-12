@@ -45,7 +45,11 @@ export const saveChatSessions = (sessions: ChatSession[]): void => {
 };
 
 // Create a new chat session
-export const createChatSession = (title: string = 'New Chat'): ChatSession => {
+export const createChatSession = (
+  title: string = 'New Chat',
+  workspaceId?: string,
+  currentWorkingDirectory?: string
+): ChatSession => {
   const sessions = getChatSessions();
   
   const newSession: ChatSession = {
@@ -53,7 +57,9 @@ export const createChatSession = (title: string = 'New Chat'): ChatSession => {
     title,
     messages: [],
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    workspaceId,
+    currentWorkingDirectory
   };
   
   console.log('Creating new session:', newSession);
@@ -82,6 +88,26 @@ export const updateChatSession = (updatedSession: ChatSession): void => {
     // Update the session with the new data and update timestamp
     sessions[index] = {
       ...updatedSession,
+      updatedAt: new Date()
+    };
+    saveChatSessions(sessions);
+  }
+};
+
+// Update workspace and CWD for a chat session
+export const updateChatSessionWorkspace = (
+  sessionId: string, 
+  workspaceId?: string, 
+  currentWorkingDirectory?: string
+): void => {
+  const sessions = getChatSessions();
+  const index = sessions.findIndex(session => session.id === sessionId);
+  
+  if (index !== -1) {
+    sessions[index] = {
+      ...sessions[index],
+      workspaceId,
+      currentWorkingDirectory,
       updatedAt: new Date()
     };
     saveChatSessions(sessions);

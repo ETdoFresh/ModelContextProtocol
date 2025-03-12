@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemeToggle from './ThemeToggle';
+import WorkspaceSelector from './WorkspaceSelector';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import '../styles/Header.css';
 
@@ -23,6 +24,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
           <h1>MCP Web Chat Interface</h1>
         </div>
         <div className="header-actions">
+          <WorkspaceSelector />
           <div className="model-info">
             <span>Model: google/gemini-2.0-flash-001</span>
           </div>

@@ -7,6 +7,7 @@ import ChatSessions from './ChatSessions';
 import McpServers from './McpServers';
 import Settings from './Settings';
 import { setupMcpClients } from '../services/mcpService';
+import { initializeDefaultWorkspace } from '../services/workspaceService';
 import '../styles/App.css';
 
 const App: React.FC = () => {
@@ -17,6 +18,12 @@ const App: React.FC = () => {
     setupMcpClients().catch(error => {
       console.error('Failed to setup MCP clients:', error);
     });
+
+    // Initialize default workspace if none exists
+    const defaultWorkspace = initializeDefaultWorkspace();
+    if (defaultWorkspace) {
+      console.log('Default workspace created:', defaultWorkspace);
+    }
   }, []);
 
   const toggleSidebar = () => {

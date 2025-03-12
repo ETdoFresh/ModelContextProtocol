@@ -13,7 +13,10 @@ const parseDates = (session: any): ChatSession => {
     messages: session.messages.map((msg: any) => ({
       ...msg,
       timestamp: new Date(msg.timestamp)
-    }))
+    })),
+    // Ensure backward compatibility with older chat sessions
+    workspaceId: session.workspaceId || undefined,
+    currentWorkingDirectory: session.currentWorkingDirectory || undefined
   };
 };
 

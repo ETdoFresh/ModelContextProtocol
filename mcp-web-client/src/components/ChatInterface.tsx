@@ -4,18 +4,23 @@ import MessageInput from './MessageInput';
 import { getModelResponse } from '../services/openRouterService';
 import { callMcpFunction } from '../services/mcpService';
 import { ensureCurrentChatSession, getCurrentChatSession, updateChatSession } from '../services/chatService';
+import { ensureCurrentWorkspace, getCurrentWorkspace } from '../services/workspaceService';
 import { Message } from '../types';
 import '../styles/ChatInterface.css';
 
 const ChatInterface: React.FC = () => {
   const [currentSession, setCurrentSession] = useState(ensureCurrentChatSession());
+  const [currentWorkspace, setCurrentWorkspace] = useState(ensureCurrentWorkspace());
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    // Ensure we have a current session when component mounts
+    // Ensure we have a current session and workspace when component mounts
     const session = ensureCurrentChatSession();
+    const workspace = ensureCurrentWorkspace();
+    
     setCurrentSession(session);
+    setCurrentWorkspace(workspace);
   }, []);
 
   useEffect(() => {
@@ -41,7 +46,9 @@ const ChatInterface: React.FC = () => {
     const updatedSession = {
       ...currentSession,
       messages: [...currentSession.messages, userMessage],
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      workspaceId: currentWorkspace.id,
+      currentWorkingDirectory: currentWorkspace.rootPath
     };
     setCurrentSession(updatedSession);
     updateChatSession(updatedSession);
@@ -99,7 +106,7 @@ const ChatInterface: React.FC = () => {
 
   const handleMcpCommand = async (command: string) => {
     // Simple parsing of MCP commands in format: serverName.functionName(params)
-    const match = command.match(/^([\w-]+)\.([\w-]+)(?:\((.*)\))?$/);
+    const match = command.match(/^([\\w-]+)\\.([\\w-]+)(?:\\((.*)\\))?$/);
     
     if (!match) {
       throw new Error('Invalid MCP command format. Use: serverName.functionName(params)');
@@ -122,7 +129,7 @@ const ChatInterface: React.FC = () => {
     const assistantMessage: Message = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
-      content: '```json\n' + JSON.stringify(result, null, 2) + '\n```',
+      content: '```json\\n' + JSON.stringify(result, null, 2) + '\\n```',
       timestamp: new Date(),
     };
     
@@ -140,6 +147,12 @@ const ChatInterface: React.FC = () => {
     <div className="chat-container">
       <div className="session-header">
         <h2>{currentSession.title}</h2>
+        {currentWorkspace && (
+          <div className="workspace-info">
+            <span>Workspace: {currentWorkspace.name}</span>
+            <span>Path: {currentWorkspace.rootPath}</span>
+          </div>
+        )}
       </div>
       <div className="messages-container">
         {currentSession.messages.length === 0 ? (

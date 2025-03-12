@@ -4,6 +4,11 @@ import { Workspace } from '../types';
 const WORKSPACES_KEY = 'mcp-workspaces';
 const CURRENT_WORKSPACE_KEY = 'mcp-current-workspace';
 
+// Default workspace values
+const DEFAULT_WORKSPACE_NAME = 'Default Workspace';
+const DEFAULT_WORKSPACE_PATH = '/';
+const DEFAULT_WORKSPACE_DESCRIPTION = 'Default workspace created automatically';
+
 // Helper function to parse dates in workspace objects
 const parseDates = (workspace: any): Workspace => {
   return {
@@ -143,6 +148,39 @@ export const clearCurrentWorkspace = (): void => {
 };
 
 /**
+ * Check if any workspaces exist
+ */
+export const workspacesExist = (): boolean => {
+  const workspaces = getWorkspaces();
+  return workspaces.length > 0;
+};
+
+/**
+ * Create a default workspace if no workspaces exist
+ * This is the primary function to call during application initialization
+ * Returns the created workspace if one was created, or undefined if no workspace was created
+ */
+export const initializeDefaultWorkspace = (): Workspace | undefined => {
+  // Check if any workspaces exist already
+  if (workspacesExist()) {
+    return undefined; // No need to create a default workspace
+  }
+  
+  // No workspaces exist, create a default one
+  console.log('No workspaces found, creating default workspace');
+  const defaultWorkspace = createWorkspace(
+    DEFAULT_WORKSPACE_NAME,
+    DEFAULT_WORKSPACE_PATH,
+    DEFAULT_WORKSPACE_DESCRIPTION
+  );
+  
+  // Set it as the current workspace
+  setCurrentWorkspace(defaultWorkspace.id);
+  
+  return defaultWorkspace;
+};
+
+/**
  * Ensure there's a current workspace selected
  * If none is selected, select the first available workspace
  * If no workspaces exist, create a default workspace
@@ -165,7 +203,11 @@ export const ensureCurrentWorkspace = (): Workspace => {
   }
   
   // No workspaces at all, create a default one
-  const defaultWorkspace = createWorkspace('Default Workspace', '/', 'Default workspace created automatically');
+  const defaultWorkspace = createWorkspace(
+    DEFAULT_WORKSPACE_NAME, 
+    DEFAULT_WORKSPACE_PATH, 
+    DEFAULT_WORKSPACE_DESCRIPTION
+  );
   setCurrentWorkspace(defaultWorkspace.id);
   return defaultWorkspace;
 };

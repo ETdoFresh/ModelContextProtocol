@@ -15,6 +15,17 @@ export interface ChatSession {
   currentWorkingDirectory?: string;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  rootPath: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  icon?: string;
+  color?: string;
+}
+
 export interface McpServerConfig {
   command: string;
   args: string[];

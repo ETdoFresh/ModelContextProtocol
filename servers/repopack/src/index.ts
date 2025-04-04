@@ -183,7 +183,7 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema> 
 async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseInputSchema>): Promise<CallToolResult> {
   console.error("Received pack_remote_codebase request with args:", args); // Log to stderr
   let tempDir: string | undefined;
-  const originalCwd = process.cwd(); // Capture original CWD for potential file output
+  const originalDirectory = args.directory; // Capture the original directory arg
 
   try {
     // 1. Create a temporary directory
@@ -210,11 +210,11 @@ async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseI
     const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string } = {
       ...args, // Spread all args
       directory: tempDir, // Override directory with temp path
-      originalDirectory: originalCwd // Pass original CWD for file output target
+      originalDirectory: originalDirectory // Pass original directory for file output target
     };
     // delete (packCodebaseArgs as any).github_repo; // Clean way to remove, though handlePackCodebase ignores it
 
-    console.error(`Calling handlePackCodebase for directory: ${tempDir} with originalCwd: ${originalCwd}`);
+    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with original directory: ${originalDirectory}`);
     // 4. Call the original pack_codebase handler
     const result = await handlePackCodebase(packCodebaseArgs);
     console.error(`handlePackCodebase completed for ${tempDir}`);

@@ -9,19 +9,22 @@ import { generateXmlOutput } from './xmlOutput.js';
 import { generateMarkdownOutput } from './markdownOutput.js';
 import { generateTextOutput } from './textOutput.js';
 import path from 'node:path';
+import fs from 'node:fs';
+import clipboard from 'clipboardy';
 
 // Restore original Zod Schema
 const PackCodebaseInputSchema = z.object({
-  directory: z.string().describe("[Required] Absolute path to the code directory to pack"),
-  includePatterns: z.string().optional().describe("[Optional] Comma-separated glob patterns for files to include"),
-  ignorePatterns: z.string().optional().describe("[Optional] Comma-separated glob patterns for files/directories to ignore"),
-  removeComments: z.boolean().optional().default(false).describe("[Optional] Remove comments from code files"),
-  removeEmptyLines: z.boolean().optional().default(false).describe("[Optional] Remove empty lines from files"),
-  fileSummary: z.boolean().optional().default(true).describe("[Optional] Include a summary section in the output"),
-  directoryStructure: z.boolean().optional().default(true).describe("[Optional] Include a directory structure section in the output"),
-  noGitignore: z.boolean().optional().default(false).describe("[Optional] Disable the use of .gitignore files"),
-  noDefaultPatterns: z.boolean().optional().default(false).describe("[Optional] Disable default ignore patterns"),
-  outputFormat: z.enum(['xml', 'md', 'txt']).optional().default('xml').describe("[Optional] Output format: 'xml', 'md', or 'txt'")
+  directory: z.string().describe("*Absolute path to the code directory to pack [Required]"),
+  includePatterns: z.string().optional().describe("Comma-separated glob patterns for files to include [Optional]"),
+  ignorePatterns: z.string().optional().describe("Comma-separated glob patterns for files/directories to ignore [Optional]"),
+  outputFormat: z.enum(['xml', 'md', 'txt']).optional().default('xml').describe("Output format: 'xml', 'md', or 'txt' [Optional]"),
+  outputTarget: z.enum(['stdout', 'file', 'clipboard']).optional().default('stdout').describe("Output destination: 'stdout', 'file' (repopack.{format} in input dir), or 'clipboard' [Optional]"),
+  removeComments: z.boolean().optional().default(false).describe("Remove comments from code files [Optional]"),
+  removeEmptyLines: z.boolean().optional().default(false).describe("Remove empty lines from files [Optional]"),
+  fileSummary: z.boolean().optional().default(true).describe("Include a summary section in the output [Optional]"),
+  directoryStructure: z.boolean().optional().default(true).describe("Include a directory structure section in the output [Optional]"),
+  noGitignore: z.boolean().optional().default(false).describe("Disable the use of .gitignore files [Optional]"),
+  noDefaultPatterns: z.boolean().optional().default(false).describe("Disable default ignore patterns [Optional]"),
 });
 
 // --- Restore original Tool Handler ---
@@ -34,7 +37,7 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
     console.error("Validated args:", validatedArgs);
 
     // Construct options for fileUtils, ensuring directory is absolute
-    const packOptions: PackCodebaseOptions = {
+    const packOptions: PackCodebaseOptions & { outputTarget: 'stdout' | 'file' | 'clipboard' } = {
       directory: path.resolve(validatedArgs.directory), // Ensure absolute path
       includePatterns: validatedArgs.includePatterns,
       ignorePatterns: validatedArgs.ignorePatterns,
@@ -47,6 +50,8 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
       directoryStructure: validatedArgs.directoryStructure,
       // Pass output format
       outputFormat: validatedArgs.outputFormat,
+      // Pass outputTarget flag
+      outputTarget: validatedArgs.outputTarget,
     };
     console.error("Effective pack options:", packOptions);
 
@@ -98,10 +103,51 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
     }
     console.error("Output generated.");
 
-    // 5. Return result
-    return {
-      content: [{ type: "text", text: outputContent }], // Use the generated output
-    };
+    // 5. Handle Output based on outputTarget
+    switch (packOptions.outputTarget) {
+        case 'file':
+            const outputFilename = `repopack.${packOptions.outputFormat}`;
+            const outputPath = path.join(packOptions.directory, outputFilename);
+            try {
+                console.error(`Writing output to file: ${outputPath}`);
+                fs.writeFileSync(outputPath, outputContent, 'utf8');
+                console.error(`Successfully wrote to ${outputPath}`);
+                return {
+                    content: [{ type: "text", text: `Repopack written to ${outputPath}` }],
+                };
+            } catch (writeError: any) {
+                console.error(`Error writing output file: ${writeError.message}`, writeError.stack);
+                return {
+                    content: [{ type: "text", text: `<error>Error writing output file ${outputPath}: ${writeError.message}</error>` }],
+                    isError: true,
+                };
+            }
+            break;
+
+        case 'clipboard':
+            try {
+                console.error(`Copying output to clipboard...`);
+                clipboard.writeSync(outputContent);
+                console.error(`Successfully copied output to clipboard.`);
+                return {
+                    content: [{ type: "text", text: `Repopack content copied to clipboard.` }],
+                };
+            } catch (clipboardError: any) {
+                console.error(`Error copying to clipboard: ${clipboardError.message}`, clipboardError.stack);
+                return {
+                    content: [{ type: "text", text: `<error>Error copying output to clipboard: ${clipboardError.message}</error>` }],
+                    isError: true,
+                };
+            }
+            break;
+
+        case 'stdout':
+        default:
+            // Original behavior: return content via stdio
+            return {
+              content: [{ type: "text", text: outputContent }], // Use the generated output
+            };
+    }
 
   } catch (error: any) {
     console.error(`Error in pack_codebase: ${error.message}`, error.stack); // Log full error to stderr
@@ -129,7 +175,7 @@ const server = new McpServer(
 // Register the tool using the server.tool() method
 server.tool(
   "pack_codebase",
-  "Package a local code directory into a consolidated text file [xml-default, md, txt] for AI analysis.",
+  "Package a local code directory into a consolidated text file [xml-default, md, txt] for AI analysis. Output can be directed to 'stdout' (default), a 'file' (repopack.{format}), or the 'clipboard'. Even though stdout is the default, it is recommended to use the 'file' as most codebases are large and stdout may be too large to handle.",
   // Use the original schema shape
   PackCodebaseInputSchema.shape,
   handlePackCodebase // Pass the handler function

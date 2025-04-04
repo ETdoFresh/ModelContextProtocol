@@ -17,6 +17,7 @@
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.8.0",
+    "clipboardy": "^4.0.0",
     "fast-xml-parser": "^5.2.0",
     "globby": "^14.1.0",
     "ignore": "^7.0.3",
@@ -26,6 +27,7 @@
     "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
+    "@types/clipboardy": "^1.1.0",
     "@types/node": "^22.14.0"
   }
 }

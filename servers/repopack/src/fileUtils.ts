@@ -25,6 +25,8 @@ export interface PackCodebaseOptions {
   // Added for XML generation options
   fileSummary?: boolean;
   directoryStructure?: boolean;
+  // Add output format
+  outputFormat?: 'xml' | 'md' | 'txt';
 }
 
 export interface FindFilesResult {
@@ -307,4 +309,17 @@ export function generateDirectoryStructure(filePaths: string[]): string {
     const root: TreeNode = createTreeNode('.', true); // Use '.' for the root
     filePaths.forEach(filePath => addPathToTree(root, filePath));
     return treeToString(root).trim();
+}
+
+// --- Summary Generation Logic ---
+
+export function generateSummaryNotes(options: PackCodebaseOptions): string[] {
+    return [
+        "- Some files may have been excluded based on ignore rules.",
+        "- Binary files and files larger than 5MB are not included.",
+        options.useGitignore ? "- Files matching patterns in .gitignore are excluded." : "- .gitignore rules were not used.",
+        options.useDefaultPatterns ? "- Files matching default ignore patterns are excluded." : "- Default ignore patterns were not used.",
+        options.removeComments ? "- Code comments have been removed from supported file types." : "",
+        options.removeEmptyLines ? "- Empty lines have been removed." : "",
+    ].filter(Boolean);
 } 

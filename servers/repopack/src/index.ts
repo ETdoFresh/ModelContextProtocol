@@ -6,6 +6,8 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { findFiles, processFiles, generateDirectoryStructure, PackCodebaseOptions } from './fileUtils.js';
 import { generateXmlOutput } from './xmlOutput.js';
+import { generateMarkdownOutput } from './markdownOutput.js';
+import { generateTextOutput } from './textOutput.js';
 import path from 'node:path';
 
 // Restore original Zod Schema
@@ -19,6 +21,7 @@ const PackCodebaseInputSchema = z.object({
   directoryStructure: z.boolean().optional().default(true).describe("Include a directory structure section in the output"),
   noGitignore: z.boolean().optional().default(false).describe("Disable the use of .gitignore files"),
   noDefaultPatterns: z.boolean().optional().default(false).describe("Disable default ignore patterns"),
+  outputFormat: z.enum(['xml', 'md', 'txt']).optional().default('xml').describe("Output format: 'xml', 'md', or 'txt'")
 });
 
 // --- Restore original Tool Handler ---
@@ -42,6 +45,8 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
       // Pass XML generation options through
       fileSummary: validatedArgs.fileSummary,
       directoryStructure: validatedArgs.directoryStructure,
+      // Pass output format
+      outputFormat: validatedArgs.outputFormat,
     };
     console.error("Effective pack options:", packOptions);
 
@@ -69,25 +74,33 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
         console.error("Directory structure generated.");
     }
 
-    // 4. Generate XML output
-    console.error("Generating XML output...");
-    // Revert directory structure formatting additions
-    // const trimmedDirStructure = dirStructureString.trim();
-    // const formattedDirStructure = packOptions.directoryStructure && trimmedDirStructure
-    //  ? `\n${trimmedDirStructure}\n`
-    //  : "";
-
-    const xmlOutput = generateXmlOutput({
-        directoryStructure: `\n${dirStructureString}\n  `, // Pass original string again
+    // 4. Generate Output (Conditional)
+    console.error(`Generating output in ${packOptions.outputFormat} format...`);
+    let outputContent = "";
+    const generatorContext = {
+        directoryStructure: dirStructureString,
         processedFiles,
         options: packOptions,
-        ignorePatterns: effectiveIgnorePatterns // Pass ignore patterns to XML generation
-    });
-    console.error("XML output generated.");
+        ignorePatterns: effectiveIgnorePatterns
+    };
+
+    switch (packOptions.outputFormat) {
+        case 'md':
+            outputContent = generateMarkdownOutput(generatorContext);
+            break;
+        case 'txt':
+            outputContent = generateTextOutput(generatorContext);
+            break;
+        case 'xml':
+        default:
+            outputContent = generateXmlOutput(generatorContext);
+            break;
+    }
+    console.error("Output generated.");
 
     // 5. Return result
     return {
-      content: [{ type: "text", text: xmlOutput }],
+      content: [{ type: "text", text: outputContent }], // Use the generated output
     };
 
   } catch (error: any) {

@@ -1,5 +1,6 @@
 import { XMLBuilder } from 'fast-xml-parser';
 import type { FileData, PackCodebaseOptions } from './fileUtils.js';
+import { generateSummaryNotes } from './fileUtils.js';
 
 interface OutputContext {
   directoryStructure: string;
@@ -20,14 +21,8 @@ interface FileSummaryContent {
 
 // Generates the <file_summary> content as an object
 function generateFileSummaryObject(options: PackCodebaseOptions): FileSummaryContent {
-    const notesList = [
-        "- Some files may have been excluded based on ignore rules.",
-        "- Binary files and files larger than 5MB are not included.",
-        options.useGitignore ? "- Files matching patterns in .gitignore are excluded." : "- .gitignore rules were not used.",
-        options.useDefaultPatterns ? "- Files matching default ignore patterns are excluded." : "- Default ignore patterns were not used.",
-        options.removeComments ? "- Code comments have been removed from supported file types." : "",
-        options.removeEmptyLines ? "- Empty lines have been removed." : "",
-    ].filter(Boolean);
+    // Use the reusable function
+    const notesList = generateSummaryNotes(options);
 
     return {
         intro: "This section contains a summary of this file.",

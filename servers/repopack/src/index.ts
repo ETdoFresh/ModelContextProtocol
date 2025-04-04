@@ -10,6 +10,9 @@ import { generateMarkdownOutput } from './markdownOutput.js';
 import { generateTextOutput } from './textOutput.js';
 import path from 'node:path';
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
+import { execSync } from 'node:child_process';
 import clipboard from 'clipboardy';
 
 // Restore original Zod Schema
@@ -27,8 +30,13 @@ const PackCodebaseInputSchema = z.object({
   noDefaultPatterns: z.boolean().optional().default(false).describe("Disable default ignore patterns [Optional]"),
 });
 
+// New Zod Schema for remote codebase packing
+const PackRemoteCodebaseInputSchema = PackCodebaseInputSchema.extend({
+  github_repo: z.string().describe("*URL of the GitHub repository to clone (e.g., https://github.com/user/repo.git) [Required]"),
+});
+
 // --- Restore original Tool Handler ---
-async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>): Promise<CallToolResult> {
+async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string }): Promise<CallToolResult> {
   console.error("Received pack_codebase request with args:", args); // Log to stderr
 
   try {
@@ -113,7 +121,9 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
     switch (packOptions.outputTarget) {
         case 'file':
             const outputFilename = `repopack-output.${packOptions.outputFormat}`;
-            const outputPath = path.join(packOptions.directory, outputFilename);
+            // Write file relative to the *original* directory if cloned, or the input dir otherwise
+            const baseDir = args.originalDirectory || packOptions.directory; // Use original if available
+            const outputPath = path.join(baseDir, outputFilename);
             try {
                 console.error(`Writing output to file: ${outputPath}`);
                 fs.writeFileSync(outputPath, outputContent, 'utf8');
@@ -169,6 +179,68 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
   }
 }
 
+// --- New Tool Handler for Remote Codebase ---
+async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseInputSchema>): Promise<CallToolResult> {
+  console.error("Received pack_remote_codebase request with args:", args); // Log to stderr
+  let tempDir: string | undefined;
+  const originalCwd = process.cwd(); // Capture original CWD for potential file output
+
+  try {
+    // 1. Create a temporary directory
+    tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repopack-clone-'));
+    console.error(`Created temporary directory: ${tempDir}`);
+
+    // 2. Clone the repository
+    const cloneUrl = args.github_repo;
+    console.error(`Cloning repository: ${cloneUrl} into ${tempDir}`);
+    try {
+      // Use execSync for simplicity here, consider async execution for large repos
+      execSync(`git clone --depth 1 ${cloneUrl} .`, { cwd: tempDir, stdio: 'pipe' }); // Clone into the temp dir itself
+      console.error(`Successfully cloned ${cloneUrl}`);
+    } catch (cloneError: any) {
+      console.error(`Error cloning repository: ${cloneError.message}`, cloneError.stderr?.toString());
+      return {
+        content: [{ type: "text", text: `<error>Error cloning repository ${cloneUrl}: ${cloneError.message}</error>` }],
+        isError: true,
+      };
+    }
+
+    // 3. Prepare arguments for handlePackCodebase
+    // We need to pass all original args EXCEPT github_repo, and set the directory
+    const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string } = {
+      ...args, // Spread all args
+      directory: tempDir, // Override directory with temp path
+      originalDirectory: originalCwd // Pass original CWD for file output target
+    };
+    // delete (packCodebaseArgs as any).github_repo; // Clean way to remove, though handlePackCodebase ignores it
+
+    console.error(`Calling handlePackCodebase for directory: ${tempDir} with originalCwd: ${originalCwd}`);
+    // 4. Call the original pack_codebase handler
+    const result = await handlePackCodebase(packCodebaseArgs);
+    console.error(`handlePackCodebase completed for ${tempDir}`);
+    return result;
+
+  } catch (error: any) {
+    console.error(`Error in handlePackRemoteCodebase: ${error.message}`, error.stack);
+    return {
+      content: [{ type: "text", text: `<error>Error processing pack_remote_codebase: ${error.message}</error>` }],
+      isError: true,
+    };
+  } finally {
+    // 5. Clean up the temporary directory
+    if (tempDir) {
+      console.error(`Cleaning up temporary directory: ${tempDir}`);
+      try {
+        await fsp.rm(tempDir, { recursive: true, force: true });
+        console.error(`Successfully removed temporary directory: ${tempDir}`);
+      } catch (cleanupError: any) {
+        console.error(`Error removing temporary directory ${tempDir}: ${cleanupError.message}`);
+        // Log cleanup error but don't necessarily overwrite the primary result/error
+      }
+    }
+  }
+}
+
 // --- Server Setup ---
 const server = new McpServer(
   {
@@ -185,6 +257,14 @@ server.tool(
   // Use the original schema shape
   PackCodebaseInputSchema.shape,
   handlePackCodebase // Pass the handler function
+);
+
+// Register the new remote tool
+server.tool(
+  "pack_remote_codebase",
+  "Clones a remote GitHub repository to a temporary location and then packages it using the same logic as pack_codebase. Output can be directed to 'stdout', 'file', or 'clipboard'.",
+  PackRemoteCodebaseInputSchema.shape, // Use the new schema
+  handlePackRemoteCodebase          // Use the new handler
 );
 
 // --- Start Server ---

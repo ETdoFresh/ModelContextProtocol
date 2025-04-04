@@ -34,13 +34,20 @@ export interface FindFilesResult {
 
 // --- File Searching Logic ---
 
-async function readGitignore(rootDir: string): Promise<string[]> {
-  const gitignorePath = path.join(rootDir, '.gitignore');
+// Reads rules from a specific .gitignore file path
+async function readGitignoreRulesFromFile(gitignorePath: string): Promise<string[]> {
   try {
     const content = await fs.readFile(gitignorePath, 'utf-8');
-    return content.split('\n').filter((line: string) => line.trim() !== '' && !line.startsWith('#'));
+    return content.split('\n')
+      .map(line => line.trim()) // Trim lines
+      .filter((line: string) => line !== '' && !line.startsWith('#'));
   } catch (error) {
-    // Ignore if .gitignore doesn't exist
+    // Ignore if file doesn't exist or other read errors
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        // File not found is expected, return empty
+    } else {
+        console.error(`Error reading .gitignore file ${gitignorePath}:`, error);
+    }
     return [];
   }
 }
@@ -86,15 +93,47 @@ export async function findFiles(options: PackCodebaseOptions): Promise<FindFiles
 
   // 3. Add .gitignore rules (prepare ignore instance)
   const ig = ignore();
-  let gitignoreRules: string[] = []; // Store gitignore rules separately for now
+  let gitignoreRules: string[] = []; // Combined rules from all found .gitignores
+  let currentDir = resolvedDir;
+
   if (useGitignore) {
-      gitignoreRules = await readGitignore(resolvedDir);
-      ig.add(gitignoreRules); // Add rules to the ignore instance
+      console.error("Searching for .gitignore files upwards from:", resolvedDir);
+      while (true) {
+          const gitignorePath = path.join(currentDir, '.gitignore');
+          try {
+              // Check if file exists (using stat for potential errors)
+              await fs.stat(gitignorePath);
+              console.error("Found .gitignore at:", gitignorePath);
+              const rules = await readGitignoreRulesFromFile(gitignorePath);
+              // Add rules from this file - order matters for precedence in some ignore implementations
+              // Adding parent rules first might be conceptually clearer, let's reverse later
+              gitignoreRules.push(...rules);
+          } catch (error) {
+              // If stat fails with ENOENT, file doesn't exist, continue upwards
+              if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) {
+                  console.error(`Error checking for .gitignore at ${gitignorePath}:`, error);
+                  // Don't stop search for other errors, but log them
+              }
+          }
+
+          const parentDir = path.dirname(currentDir);
+          if (parentDir === currentDir) {
+              // Reached the root
+              break;
+          }
+          currentDir = parentDir;
+      }
+      // Reverse the rules so the most specific (.gitignore in deeper dirs) are added last
+      // This aligns with how git itself handles precedence
+      ig.add(gitignoreRules.reverse());
+      console.error("Total .gitignore rules added:", gitignoreRules.length);
   }
 
   // Combine all ignore sources for globby and the final list
+  // Note: globby doesn't use the gitignore rules directly here
   const globbyIgnorePatterns = [...effectiveIgnorePatterns]; // Use defaults and custom for globby
-  const allIgnorePatterns = [...effectiveIgnorePatterns, ...gitignoreRules]; // For the output
+  // For the final XML output, show all patterns including gitignore
+  const allIgnorePatterns = [...effectiveIgnorePatterns, ...gitignoreRules];
 
   // Use globby to find files
   const files = await globby(patternsToInclude, {

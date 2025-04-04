@@ -36,7 +36,9 @@ const PackRemoteCodebaseInputSchema = PackCodebaseInputSchema.extend({
 });
 
 // --- Restore original Tool Handler ---
-async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string }): Promise<CallToolResult> {
+async function handlePackCodebase(
+    args: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string }
+): Promise<CallToolResult> {
   console.error("Received pack_codebase request with args:", args); // Log to stderr
 
   try {
@@ -47,6 +49,7 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema> 
     // Construct options for fileUtils, ensuring directory is absolute
     const packOptions: PackCodebaseOptions & { outputTarget: 'stdout' | 'file' | 'clipboard' } = {
       directory: path.resolve(validatedArgs.directory), // Ensure absolute path
+      sourceIdentifier: validatedArgs.sourceIdentifier || path.resolve(validatedArgs.directory), // Use provided identifier or default to resolved directory
       includePatterns: validatedArgs.includePatterns,
       ignorePatterns: validatedArgs.ignorePatterns,
       removeComments: validatedArgs.removeComments,
@@ -207,14 +210,17 @@ async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseI
 
     // 3. Prepare arguments for handlePackCodebase
     // We need to pass all original args EXCEPT github_repo, and set the directory
-    const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string } = {
+    // Also pass the original directory arg so 'file' output target works correctly
+    // Pass the github_repo as the sourceIdentifier
+    const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string } = {
       ...args, // Spread all args
       directory: tempDir, // Override directory with temp path
-      originalDirectory: originalDirectory // Pass original directory for file output target
+      originalDirectory: originalDirectory, // Pass original directory for file output target
+      sourceIdentifier: args.github_repo // Pass repo URL as the source identifier
     };
     // delete (packCodebaseArgs as any).github_repo; // Clean way to remove, though handlePackCodebase ignores it
 
-    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with original directory: ${originalDirectory}`);
+    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with original directory: ${originalDirectory} and sourceIdentifier: ${args.github_repo}`);
     // 4. Call the original pack_codebase handler
     const result = await handlePackCodebase(packCodebaseArgs);
     console.error(`handlePackCodebase completed for ${tempDir}`);

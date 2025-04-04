@@ -25,6 +25,7 @@ interface FileSummaryContent {
 function generateFileSummaryObject(options: PackCodebaseOptions): FileSummaryContent {
     // Use the reusable function
     const notesList = generateSummaryNotes(options);
+    const source = options.sourceIdentifier || options.directory; // Use identifier if available
 
     return {
         intro: "This section contains a summary of this file.",
@@ -47,7 +48,7 @@ or other automated processes.`,
 - Be aware that this file may contain sensitive information. Handle it with
   the same level of security as you would the original repository.`,
         notes: `${notesList.join('\n')}`,
-        additional_info: `Packed from directory: ${options.directory}`
+        additional_info: ``
     };
 }
 
@@ -77,7 +78,7 @@ export function generateXmlOutput(context: OutputContext): string {
 
   const xmlObject = {
     repopack: {
-      description: `This file is a merged representation of the codebase in ${options.directory}, combined into a single document by repopack-server.`,
+      description: `This file is a merged representation of the codebase from ${options.sourceIdentifier || options.directory}, combined into a single document by repopack-server.`,
       ...(fileSummary && { file_summary: generateFileSummaryObject(options) }),
 
       // Conditionally include default ignore patterns

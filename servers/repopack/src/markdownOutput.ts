@@ -21,8 +21,9 @@ export function generateMarkdownOutput(context: OutputContext): string {
     inputIgnorePatterns,
     gitignorePatterns
   } = context;
+  const source = options.sourceIdentifier || options.directory; // Use identifier if available
 
-  let output = `# Repopack Output: ${options.directory}\n\n`;
+  let output = `# Repopack Output: ${source}\n\n`;
 
   // File Summary section
   if (options.fileSummary) {

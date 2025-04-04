@@ -16,6 +16,7 @@ export interface FileData {
 
 export interface PackCodebaseOptions {
   directory: string;
+  sourceIdentifier?: string; // Added: Can be local path or remote URL
   includePatterns?: string;
   ignorePatterns?: string;
   removeComments?: boolean;
@@ -301,11 +302,28 @@ export function generateDirectoryStructure(filePaths: string[]): string {
 // --- Summary Generation Logic ---
 
 export function generateSummaryNotes(options: PackCodebaseOptions): string[] {
-    return [
-        "- Some files may have been excluded based on ignore rules.",
-        "- Binary files and files larger than 5MB are not included.",
-        options.useDefaultPatterns ? "- Files matching default ignore patterns are excluded." : "- Default ignore patterns were not used.",
-        options.removeComments ? "- Code comments have been removed from supported file types." : "",
-        options.removeEmptyLines ? "- Empty lines have been removed." : "",
-    ].filter(Boolean);
+    const notes: string[] = [];
+    const source = options.sourceIdentifier || options.directory; // Use identifier if available
+
+    notes.push(`Source: ${source}`);
+
+    if (options.removeComments) {
+        notes.push("- Code comments have been removed from supported file types.");
+    }
+    if (options.removeEmptyLines) {
+        notes.push("- Empty lines have been removed.");
+    }
+    if (options.useDefaultPatterns) {
+        notes.push("- Files matching default ignore patterns are excluded.");
+    } else {
+        notes.push("- Default ignore patterns were not used.");
+    }
+    if (options.useGitignore) {
+        notes.push("- Some files may have been excluded based on ignore rules.");
+    }
+    if (options.removeComments) {
+        notes.push("- Binary files and files larger than 5MB are not included.");
+    }
+
+    return notes;
 } 

@@ -63,7 +63,7 @@ export function generateXmlOutput(context: OutputContext): string {
   });
 
   const xmlObject = {
-    repomix: { // Using 'repomix' root tag as per the example format provided
+    repopack: { // Using 'repopack' root tag as per the example format provided
       description: `This file is a merged representation of the codebase in ${options.directory}, combined into a single document by repopack-server.`,
       ...(fileSummary && { file_summary: generateFileSummaryObject(options) }),
       ignored_patterns: {

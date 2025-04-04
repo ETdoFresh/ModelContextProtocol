@@ -17,35 +17,39 @@ import clipboard from 'clipboardy';
 
 // Helper function to normalize potential URI paths from clients
 function normalizePathUri(uriPath: string): string {
-  // Match patterns like /c%3A/..., /C%3A/... or file:///c%3A/...
-  const match = uriPath.match(/^(?:file:\/\/\/)?\/([a-zA-Z])%3A\/(.*)$/);
-  if (match && process.platform === 'win32') {
-    const driveLetter = match[1];
-    const restOfPath = match[2];
-    try {
-        // Decode URI components and replace forward slashes with backslashes for Windows
+  if (process.platform === 'win32') {
+    // Try matching /c:/... or /c%3A/... (allowing case-insensitivity for drive letter)
+    // Handles optional file:/// prefix as well
+    const winMatch = uriPath.match(/^(?:file:\/\/\/)?\/([a-zA-Z])[:|%3A]\/(.*)$/i);
+    if (winMatch) {
+      const driveLetter = winMatch[1];
+      const restOfPath = winMatch[2];
+      try {
+        // Decode URI components (handles %20 etc.) and replace forward slashes with backslashes
         const decodedPath = decodeURIComponent(restOfPath);
         const winPath = `${driveLetter}:\\${decodedPath.replace(/\//g, '\\')}`;
-        // console.error(`Normalized URI path "${uriPath}" to "${winPath}"`); // Optional logging
+        console.error(`Normalized Windows URI path "${uriPath}" to "${winPath}"`); // More specific logging
         return winPath;
-    } catch (e) {
-        console.error(`Failed to decode/normalize path URI "${uriPath}":`, e);
-         // Fallback to original if decoding fails catastrophically
-         return uriPath;
+      } catch (e) {
+        console.error(`Failed to decode/normalize Windows path URI "${uriPath}":`, e);
+        // Fallback to original if decoding fails catastrophically
+        return uriPath;
+      }
     }
   }
 
-  // Also handle general URI decoding for non-windows or non-matching paths
+  // If not a Windows-specific URI pattern, try general decoding as a fallback
   try {
-      const decoded = decodeURIComponent(uriPath);
-      // if (decoded !== uriPath) { // Optional logging
-      //     console.error(`Decoded path URI "${uriPath}" to "${decoded}"`);
-      // }
-      return decoded;
+    const decoded = decodeURIComponent(uriPath);
+    // Optional logging if you want to see when general decoding happens
+    // if (decoded !== uriPath) {
+    //     console.error(`Decoded potentially non-Windows path URI "${uriPath}" to "${decoded}"`);
+    // }
+    return decoded;
   } catch (e) {
-      console.error(`Failed to decode path URI "${uriPath}":`, e);
-      // Fallback to original if decoding fails
-      return uriPath;
+    console.error(`Failed to decode path URI "${uriPath}":`, e);
+    // Fallback to original if decoding fails
+    return uriPath;
   }
 }
 

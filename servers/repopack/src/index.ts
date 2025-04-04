@@ -12,16 +12,16 @@ import path from 'node:path';
 
 // Restore original Zod Schema
 const PackCodebaseInputSchema = z.object({
-  directory: z.string().describe("Absolute path to the code directory to pack"),
-  includePatterns: z.string().optional().describe("Comma-separated glob patterns for files to include"),
-  ignorePatterns: z.string().optional().describe("Comma-separated glob patterns for files/directories to ignore"),
-  removeComments: z.boolean().optional().default(false).describe("Remove comments from code files"),
-  removeEmptyLines: z.boolean().optional().default(false).describe("Remove empty lines from files"),
-  fileSummary: z.boolean().optional().default(true).describe("Include a summary section in the output"),
-  directoryStructure: z.boolean().optional().default(true).describe("Include a directory structure section in the output"),
-  noGitignore: z.boolean().optional().default(false).describe("Disable the use of .gitignore files"),
-  noDefaultPatterns: z.boolean().optional().default(false).describe("Disable default ignore patterns"),
-  outputFormat: z.enum(['xml', 'md', 'txt']).optional().default('xml').describe("Output format: 'xml', 'md', or 'txt'")
+  directory: z.string().describe("[Required] Absolute path to the code directory to pack"),
+  includePatterns: z.string().optional().describe("[Optional] Comma-separated glob patterns for files to include"),
+  ignorePatterns: z.string().optional().describe("[Optional] Comma-separated glob patterns for files/directories to ignore"),
+  removeComments: z.boolean().optional().default(false).describe("[Optional] Remove comments from code files"),
+  removeEmptyLines: z.boolean().optional().default(false).describe("[Optional] Remove empty lines from files"),
+  fileSummary: z.boolean().optional().default(true).describe("[Optional] Include a summary section in the output"),
+  directoryStructure: z.boolean().optional().default(true).describe("[Optional] Include a directory structure section in the output"),
+  noGitignore: z.boolean().optional().default(false).describe("[Optional] Disable the use of .gitignore files"),
+  noDefaultPatterns: z.boolean().optional().default(false).describe("[Optional] Disable default ignore patterns"),
+  outputFormat: z.enum(['xml', 'md', 'txt']).optional().default('xml').describe("[Optional] Output format: 'xml', 'md', or 'txt'")
 });
 
 // --- Restore original Tool Handler ---
@@ -129,7 +129,7 @@ const server = new McpServer(
 // Register the tool using the server.tool() method
 server.tool(
   "pack_codebase",
-  "Package a local code directory into a consolidated XML file for AI analysis.",
+  "Package a local code directory into a consolidated text file [xml-default, md, txt] for AI analysis.",
   // Use the original schema shape
   PackCodebaseInputSchema.shape,
   handlePackCodebase // Pass the handler function

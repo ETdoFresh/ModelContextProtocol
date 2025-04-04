@@ -6,7 +6,9 @@ interface OutputContext {
   directoryStructure: string;
   processedFiles: FileData[];
   options: PackCodebaseOptions; // Use the extended interface
-  ignorePatterns: string[]; // Add ignore patterns to context
+  defaultIgnorePatterns: string[];
+  inputIgnorePatterns: string[];
+  gitignorePatterns: string[];
 }
 
 // Define a structure for the summary content
@@ -50,7 +52,14 @@ or other automated processes.`,
 }
 
 export function generateXmlOutput(context: OutputContext): string {
-  const { directoryStructure, processedFiles, options, ignorePatterns } = context;
+  const {
+    directoryStructure,
+    processedFiles,
+    options,
+    defaultIgnorePatterns,
+    inputIgnorePatterns,
+    gitignorePatterns
+  } = context;
   // Use the options from the extended PackCodebaseOptions
   const { fileSummary = true, directoryStructure: includeDirStructure = true } = options;
 
@@ -63,14 +72,30 @@ export function generateXmlOutput(context: OutputContext): string {
     cdataPropName: "__cdata",
   });
 
+  // Helper function to create pattern nodes
+  const createPatternNodes = (patterns: string[]) => patterns.map(p => ({ '#text': p }));
+
   const xmlObject = {
-    repopack: { // Using 'repopack' root tag as per the example format provided
+    repopack: {
       description: `This file is a merged representation of the codebase in ${options.directory}, combined into a single document by repopack-server.`,
       ...(fileSummary && { file_summary: generateFileSummaryObject(options) }),
-      ignored_patterns: {
-        intro: 'List of glob patterns used globally to exclude files (from defaults, custom options, and .gitignore):',
-        pattern: ignorePatterns.map(p => ({ '#text': p }))
-      },
+
+      // Conditionally include default ignore patterns
+      ...(defaultIgnorePatterns.length > 0 && {
+        ignore_global: {
+          intro: 'Default patterns used globally to exclude files:',
+          pattern: createPatternNodes(defaultIgnorePatterns)
+        }
+      }),
+
+      // Conditionally include input ignore patterns
+      ...(inputIgnorePatterns.length > 0 && {
+        ignore_input: {
+          intro: 'User-provided patterns used to exclude files:',
+          pattern: createPatternNodes(inputIgnorePatterns)
+        }
+      }),
+
       ...(includeDirStructure && { directory_structure: directoryStructure }),
       files: {
         file: processedFiles.map((file) => ({

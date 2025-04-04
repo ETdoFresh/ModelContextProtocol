@@ -6,12 +6,21 @@ interface OutputContext {
   directoryStructure: string;
   processedFiles: FileData[];
   options: PackCodebaseOptions;
-  ignorePatterns: string[];
+  defaultIgnorePatterns: string[];
+  inputIgnorePatterns: string[];
+  gitignorePatterns: string[];
 }
 
 // Placeholder function for Markdown generation
 export function generateMarkdownOutput(context: OutputContext): string {
-  const { directoryStructure, processedFiles, options, ignorePatterns } = context;
+  const {
+    directoryStructure,
+    processedFiles,
+    options,
+    defaultIgnorePatterns,
+    inputIgnorePatterns,
+    gitignorePatterns
+  } = context;
 
   let output = `# Repopack Output: ${options.directory}\n\n`;
 
@@ -26,19 +35,38 @@ export function generateMarkdownOutput(context: OutputContext): string {
     output += `\n`;
   }
 
-  // Ignored Patterns section
-  output += `## Global Ignores\n\n`;
-  output += `List of glob patterns used globally to exclude files (from defaults, custom options, and .gitignore):\n\n`;
-  if (ignorePatterns.length > 0) {
-    output += `\`\`\`\n`;
-    ignorePatterns.forEach(pattern => {
-      output += `${pattern}\n`;
-    });
-    output += `\`\`\`\n`;
-  } else {
-    output += `_(No ignore patterns were specified or found)_\n`;
+  // Helper function to generate ignore list section
+  const generateIgnoreSection = (title: string, intro: string, patterns: string[]) => {
+    let section = `## ${title}\n\n${intro}\n\n`;
+    if (patterns.length > 0) {
+      section += `\`\`\`\n`;
+      patterns.forEach(pattern => {
+        section += `${pattern}\n`;
+      });
+      section += `\`\`\`\n`;
+    } else {
+      section += `_(No patterns in this category)_\n`;
+    }
+    return section + `\n`;
+  };
+
+  // Conditionally include Default Global Ignore Patterns section
+  if (defaultIgnorePatterns.length > 0) {
+    output += generateIgnoreSection(
+      'Default Global Ignore Patterns',
+      'Default patterns used globally to exclude files:',
+      defaultIgnorePatterns
+    );
   }
-  output += `\n`;
+
+  // Conditionally include Input Ignore Patterns section
+  if (inputIgnorePatterns.length > 0) {
+    output += generateIgnoreSection(
+      'Input Ignore Patterns',
+      'User-provided patterns used to exclude files:',
+      inputIgnorePatterns
+    );
+  }
 
   // Directory Structure section
   if (options.directoryStructure) {

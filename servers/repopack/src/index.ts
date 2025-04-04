@@ -57,8 +57,11 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
 
     // 1. Find files
     console.error("Finding files...");
-    const { filePaths, ignorePatterns: effectiveIgnorePatterns } = await findFiles(packOptions);
-    console.error(`Found ${filePaths.length} files. Effective ignore patterns:`, effectiveIgnorePatterns);
+    const { filePaths, defaultIgnorePatterns, inputIgnorePatterns, gitignorePatterns } = await findFiles(packOptions);
+    console.error(`Found ${filePaths.length} files.`);
+    console.error(`Default ignore patterns: ${defaultIgnorePatterns.length}`);
+    console.error(`Input ignore patterns: ${inputIgnorePatterns.length}`);
+    console.error(`Gitignore patterns: ${gitignorePatterns.length}`);
      if (filePaths.length === 0) {
         return {
             content: [{ type: "text", text: "<error>No files found matching the criteria.</error>" }],
@@ -86,7 +89,10 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
         directoryStructure: dirStructureString,
         processedFiles,
         options: packOptions,
-        ignorePatterns: effectiveIgnorePatterns
+        // Pass categorized patterns
+        defaultIgnorePatterns,
+        inputIgnorePatterns,
+        gitignorePatterns
     };
 
     switch (packOptions.outputFormat) {

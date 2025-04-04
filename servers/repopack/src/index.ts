@@ -14,7 +14,7 @@ import clipboard from 'clipboardy';
 
 // Restore original Zod Schema
 const PackCodebaseInputSchema = z.object({
-  directory: z.string().describe("*Absolute path to the code directory to pack [Required]"),
+  directory: z.string().describe("*Absolute path to the code directory to pack (Windows: C:\\Directory\\File.txt Mac/Linux: /Directory/File.txt) [Required]"),
   includePatterns: z.string().optional().describe("Comma-separated glob patterns for files to include [Optional]"),
   ignorePatterns: z.string().optional().describe("Comma-separated glob patterns for files/directories to ignore [Optional]"),
   outputFormat: z.enum(['xml', 'md', 'txt']).optional().default('xml').describe("Output format: 'xml', 'md', or 'txt' [Optional]"),
@@ -106,7 +106,7 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
     // 5. Handle Output based on outputTarget
     switch (packOptions.outputTarget) {
         case 'file':
-            const outputFilename = `repopack.${packOptions.outputFormat}`;
+            const outputFilename = `repopack-output.${packOptions.outputFormat}`;
             const outputPath = path.join(packOptions.directory, outputFilename);
             try {
                 console.error(`Writing output to file: ${outputPath}`);
@@ -175,7 +175,7 @@ const server = new McpServer(
 // Register the tool using the server.tool() method
 server.tool(
   "pack_codebase",
-  "Package a local code directory into a consolidated text file [xml-default, md, txt] for AI analysis. Output can be directed to 'stdout' (default), a 'file' (repopack.{format}), or the 'clipboard'. Even though stdout is the default, it is recommended to use the 'file' as most codebases are large and stdout may be too large to handle.",
+  "Package a local code directory into a consolidated text file [xml-default, md, txt] for AI analysis. Output can be directed to 'stdout' (default), a 'file' (repopack-output.{format}), or the 'clipboard'. Even though stdout is the default, it is recommended to use the 'file' as most codebases are large and stdout may be too large to handle.",
   // Use the original schema shape
   PackCodebaseInputSchema.shape,
   handlePackCodebase // Pass the handler function

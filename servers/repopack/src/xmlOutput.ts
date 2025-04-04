@@ -60,6 +60,7 @@ export function generateXmlOutput(context: OutputContext): string {
     indentBy: "  ",
     suppressBooleanAttributes: false,
     suppressEmptyNode: true,
+    cdataPropName: "__cdata",
   });
 
   const xmlObject = {
@@ -72,10 +73,9 @@ export function generateXmlOutput(context: OutputContext): string {
       },
       ...(includeDirStructure && { directory_structure: directoryStructure }),
       files: {
-        '#text': "This section contains the contents of the repository\'s files.",
         file: processedFiles.map((file) => ({
           '@_path': file.path,
-          '#text': file.content,
+          '__cdata': file.content,
         })),
       },
     },

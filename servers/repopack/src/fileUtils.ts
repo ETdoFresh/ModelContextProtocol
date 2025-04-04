@@ -148,7 +148,12 @@ export async function findFiles(options: PackCodebaseOptions): Promise<FindFiles
   });
 
   // Filter using the 'ignore' package for more precise gitignore handling
-  const filteredFiles = files.filter(file => !ig.ignores(file)); // Filter based on gitignore instance
+  let filteredFiles = files.filter(file => !ig.ignores(file)); // Filter based on gitignore instance
+
+  // Additionally filter out .gitignore files themselves if useGitignore is true
+  if (useGitignore) {
+      filteredFiles = filteredFiles.filter(file => path.basename(file) !== '.gitignore');
+  }
 
   return {
     filePaths: filteredFiles,

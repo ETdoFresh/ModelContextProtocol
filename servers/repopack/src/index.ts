@@ -37,7 +37,7 @@ const PackRemoteCodebaseInputSchema = PackCodebaseInputSchema.extend({
 
 // --- Restore original Tool Handler ---
 async function handlePackCodebase(
-    args: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string }
+    args: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string; repoOwner?: string; repoName?: string }
 ): Promise<CallToolResult> {
   console.error("Received pack_codebase request with args:", args); // Log to stderr
 
@@ -123,8 +123,13 @@ async function handlePackCodebase(
     // 5. Handle Output based on outputTarget
     switch (packOptions.outputTarget) {
         case 'file':
-            const outputFilename = `repopack-output.${packOptions.outputFormat}`;
-            // Write file relative to the *original* directory if cloned, or the input dir otherwise
+            // Construct filename: use owner/repo if provided (from remote), else default
+            const filenameBase = (args.repoOwner && args.repoName)
+                ? `repopack-output-${args.repoOwner}-${args.repoName}`
+                : `repopack-output`;
+            const outputFilename = `${filenameBase}.${packOptions.outputFormat}`;
+            // Write file relative to the *original* directory if provided (from remote clone),
+            // otherwise use the input directory.
             const baseDir = args.originalDirectory || packOptions.directory; // Use original if available
             const outputPath = path.join(baseDir, outputFilename);
             try {
@@ -208,19 +213,32 @@ async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseI
       };
     }
 
+    // Extract owner/repo from URL for filename generation
+    let repoOwner: string | undefined;
+    let repoName: string | undefined;
+    const repoUrlMatch = args.github_repo.match(/(?:https:\/\/github\.com\/|git@github\.com:)([^\/]+)\/([^\/]+?)(\.git)?$/i);
+    if (repoUrlMatch && repoUrlMatch.length >= 3) {
+        repoOwner = repoUrlMatch[1];
+        repoName = repoUrlMatch[2];
+        console.error(`Extracted repo owner: ${repoOwner}, name: ${repoName}`);
+    }
+
     // 3. Prepare arguments for handlePackCodebase
     // We need to pass all original args EXCEPT github_repo, and set the directory
     // Also pass the original directory arg so 'file' output target works correctly
     // Pass the github_repo as the sourceIdentifier
-    const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string } = {
+    // Pass extracted owner/name for filename
+    const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string; repoOwner?: string; repoName?: string } = {
       ...args, // Spread all args
       directory: tempDir, // Override directory with temp path
       originalDirectory: originalDirectory, // Pass original directory for file output target
-      sourceIdentifier: args.github_repo // Pass repo URL as the source identifier
+      sourceIdentifier: args.github_repo, // Pass repo URL as the source identifier
+      repoOwner: repoOwner, // Pass owner for filename
+      repoName: repoName, // Pass repo name for filename
     };
     // delete (packCodebaseArgs as any).github_repo; // Clean way to remove, though handlePackCodebase ignores it
 
-    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with original directory: ${originalDirectory} and sourceIdentifier: ${args.github_repo}`);
+    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with original directory: ${originalDirectory}, sourceIdentifier: ${args.github_repo}, owner: ${repoOwner}, name: ${repoName}`);
     // 4. Call the original pack_codebase handler
     const result = await handlePackCodebase(packCodebaseArgs);
     console.error(`handlePackCodebase completed for ${tempDir}`);

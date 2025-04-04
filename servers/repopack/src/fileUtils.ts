@@ -303,9 +303,6 @@ export function generateDirectoryStructure(filePaths: string[]): string {
 
 export function generateSummaryNotes(options: PackCodebaseOptions): string[] {
     const notes: string[] = [];
-    const source = options.sourceIdentifier || options.directory; // Use identifier if available
-
-    notes.push(`Source: ${source}`);
 
     if (options.removeComments) {
         notes.push("- Code comments have been removed from supported file types.");
@@ -321,9 +318,11 @@ export function generateSummaryNotes(options: PackCodebaseOptions): string[] {
     if (options.useGitignore) {
         notes.push("- Some files may have been excluded based on ignore rules.");
     }
-    if (options.removeComments) {
-        notes.push("- Binary files and files larger than 5MB are not included.");
+    if (options.ignorePatterns) {
+        notes.push("- Some files may have been excluded based on custom ignore patterns.");
     }
+
+    notes.push("- Binary files and files larger than 5MB are not included.");
 
     return notes;
 } 

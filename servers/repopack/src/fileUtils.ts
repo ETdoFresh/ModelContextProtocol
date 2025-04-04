@@ -150,11 +150,6 @@ export async function findFiles(options: PackCodebaseOptions): Promise<FindFiles
   // Filter using the 'ignore' package for more precise gitignore handling
   let filteredFiles = files.filter(file => !ig.ignores(file)); // Filter based on gitignore instance
 
-  // Additionally filter out .gitignore files themselves if useGitignore is true
-  if (useGitignore) {
-      filteredFiles = filteredFiles.filter(file => path.basename(file) !== '.gitignore');
-  }
-
   return {
     filePaths: filteredFiles,
     ignorePatterns: allIgnorePatterns // Return all patterns used
@@ -322,7 +317,6 @@ export function generateSummaryNotes(options: PackCodebaseOptions): string[] {
     return [
         "- Some files may have been excluded based on ignore rules.",
         "- Binary files and files larger than 5MB are not included.",
-        options.useGitignore ? "- Files matching patterns in .gitignore are excluded." : "- .gitignore rules were not used.",
         options.useDefaultPatterns ? "- Files matching default ignore patterns are excluded." : "- Default ignore patterns were not used.",
         options.removeComments ? "- Code comments have been removed from supported file types." : "",
         options.removeEmptyLines ? "- Empty lines have been removed." : "",

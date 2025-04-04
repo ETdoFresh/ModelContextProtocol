@@ -68,7 +68,7 @@ export function generateXmlOutput(context: OutputContext): string {
       description: `This file is a merged representation of the codebase in ${options.directory}, combined into a single document by repopack-server.`,
       ...(fileSummary && { file_summary: generateFileSummaryObject(options) }),
       ignored_patterns: {
-        intro: 'List of glob patterns used to exclude files (from defaults, custom options, and .gitignore):',
+        intro: 'List of glob patterns used globally to exclude files (from defaults, custom options, and .gitignore):',
         pattern: ignorePatterns.map(p => ({ '#text': p }))
       },
       ...(includeDirStructure && { directory_structure: directoryStructure }),

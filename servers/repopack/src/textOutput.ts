@@ -27,8 +27,8 @@ export function generateTextOutput(context: OutputContext): string {
   }
 
   // Ignored Patterns section
-  output += `** Ignored Patterns **\n`;
-  output += `List of glob patterns used to exclude files (from defaults, custom options, and .gitignore):\n`;
+  output += `** Global Ignores **\n`;
+  output += `List of glob patterns used globally to exclude files (from defaults, custom options, and .gitignore):\n`;
   if (ignorePatterns.length > 0) {
     ignorePatterns.forEach(pattern => {
       output += `- ${pattern}\n`;

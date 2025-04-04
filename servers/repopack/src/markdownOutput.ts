@@ -27,8 +27,8 @@ export function generateMarkdownOutput(context: OutputContext): string {
   }
 
   // Ignored Patterns section
-  output += `## Ignored Patterns\n\n`;
-  output += `List of glob patterns used to exclude files (from defaults, custom options, and .gitignore):\n\n`;
+  output += `## Global Ignores\n\n`;
+  output += `List of glob patterns used globally to exclude files (from defaults, custom options, and .gitignore):\n\n`;
   if (ignorePatterns.length > 0) {
     output += `\`\`\`\n`;
     ignorePatterns.forEach(pattern => {

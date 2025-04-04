@@ -27,6 +27,11 @@ export interface PackCodebaseOptions {
   directoryStructure?: boolean;
 }
 
+export interface FindFilesResult {
+  filePaths: string[];
+  ignorePatterns: string[];
+}
+
 // --- File Searching Logic ---
 
 async function readGitignore(rootDir: string): Promise<string[]> {
@@ -40,7 +45,7 @@ async function readGitignore(rootDir: string): Promise<string[]> {
   }
 }
 
-export async function findFiles(options: PackCodebaseOptions): Promise<string[]> {
+export async function findFiles(options: PackCodebaseOptions): Promise<FindFilesResult> {
   const {
     directory,
     includePatterns,
@@ -67,31 +72,34 @@ export async function findFiles(options: PackCodebaseOptions): Promise<string[]>
 
   const patternsToInclude = includePatterns ? includePatterns.split(',').map(p => p.trim()) : ['**/*'];
 
-  let patternsToIgnore: string[] = [];
+  const effectiveIgnorePatterns: string[] = []; // Renamed for clarity
 
   // 1. Add default ignores
   if (useDefaultPatterns) {
-    patternsToIgnore.push(...defaultIgnoreList);
+    effectiveIgnorePatterns.push(...defaultIgnoreList);
   }
 
   // 2. Add custom ignores
   if (ignorePatterns) {
-    patternsToIgnore.push(...ignorePatterns.split(',').map(p => p.trim()));
+    effectiveIgnorePatterns.push(...ignorePatterns.split(',').map(p => p.trim()));
   }
 
-  // 3. Add .gitignore rules
+  // 3. Add .gitignore rules (prepare ignore instance)
   const ig = ignore();
+  let gitignoreRules: string[] = []; // Store gitignore rules separately for now
   if (useGitignore) {
-      const gitignoreRules = await readGitignore(resolvedDir);
-      ig.add(gitignoreRules);
-      // Add gitignore patterns to globby ignore list as well for efficiency
-      patternsToIgnore.push(...gitignoreRules);
+      gitignoreRules = await readGitignore(resolvedDir);
+      ig.add(gitignoreRules); // Add rules to the ignore instance
   }
+
+  // Combine all ignore sources for globby and the final list
+  const globbyIgnorePatterns = [...effectiveIgnorePatterns]; // Use defaults and custom for globby
+  const allIgnorePatterns = [...effectiveIgnorePatterns, ...gitignoreRules]; // For the output
 
   // Use globby to find files
   const files = await globby(patternsToInclude, {
     cwd: resolvedDir,
-    ignore: patternsToIgnore,
+    ignore: globbyIgnorePatterns, // Use combined patterns here
     onlyFiles: true,
     dot: true, // Include dotfiles
     absolute: false, // Keep paths relative to rootDir
@@ -99,7 +107,12 @@ export async function findFiles(options: PackCodebaseOptions): Promise<string[]>
   });
 
   // Filter using the 'ignore' package for more precise gitignore handling
-  return files.filter(file => !ig.ignores(file));
+  const filteredFiles = files.filter(file => !ig.ignores(file)); // Filter based on gitignore instance
+
+  return {
+    filePaths: filteredFiles,
+    ignorePatterns: allIgnorePatterns // Return all patterns used
+  };
 }
 
 

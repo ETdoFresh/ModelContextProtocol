@@ -47,8 +47,8 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
 
     // 1. Find files
     console.error("Finding files...");
-    const filePaths = await findFiles(packOptions);
-    console.error(`Found ${filePaths.length} files.`);
+    const { filePaths, ignorePatterns: effectiveIgnorePatterns } = await findFiles(packOptions);
+    console.error(`Found ${filePaths.length} files. Effective ignore patterns:`, effectiveIgnorePatterns);
      if (filePaths.length === 0) {
         return {
             content: [{ type: "text", text: "<error>No files found matching the criteria.</error>" }],
@@ -71,10 +71,17 @@ async function handlePackCodebase(args: z.infer<typeof PackCodebaseInputSchema>)
 
     // 4. Generate XML output
     console.error("Generating XML output...");
+    // Revert directory structure formatting additions
+    // const trimmedDirStructure = dirStructureString.trim();
+    // const formattedDirStructure = packOptions.directoryStructure && trimmedDirStructure
+    //  ? `\n${trimmedDirStructure}\n`
+    //  : "";
+
     const xmlOutput = generateXmlOutput({
-        directoryStructure: dirStructureString,
+        directoryStructure: `\n${dirStructureString}\n  `, // Pass original string again
         processedFiles,
-        options: packOptions, // Pass the full options object
+        options: packOptions,
+        ignorePatterns: effectiveIgnorePatterns // Pass ignore patterns to XML generation
     });
     console.error("XML output generated.");
 

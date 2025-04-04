@@ -5,76 +5,79 @@ interface OutputContext {
   directoryStructure: string;
   processedFiles: FileData[];
   options: PackCodebaseOptions; // Use the extended interface
+  ignorePatterns: string[]; // Add ignore patterns to context
 }
 
-// Generates the <file_summary> content
-function generateFileSummary(options: PackCodebaseOptions): string {
-    const notes = [
+// Define a structure for the summary content
+interface FileSummaryContent {
+    intro: string;
+    purpose: string;
+    file_format: string;
+    usage_guidelines: string;
+    notes: string;
+    additional_info: string;
+}
+
+// Generates the <file_summary> content as an object
+function generateFileSummaryObject(options: PackCodebaseOptions): FileSummaryContent {
+    const notesList = [
         "- Some files may have been excluded based on ignore rules.",
         "- Binary files and files larger than 5MB are not included.",
         options.useGitignore ? "- Files matching patterns in .gitignore are excluded." : "- .gitignore rules were not used.",
         options.useDefaultPatterns ? "- Files matching default ignore patterns are excluded." : "- Default ignore patterns were not used.",
         options.removeComments ? "- Code comments have been removed from supported file types." : "",
         options.removeEmptyLines ? "- Empty lines have been removed." : "",
-    ].filter(Boolean).join('\n');
+    ].filter(Boolean);
 
-    return `
-This section contains a summary of this file.
-
-<purpose>
-This file contains a packed representation of the selected repository contents.
+    return {
+        intro: "This section contains a summary of this file.",
+        purpose:
+`This file contains a packed representation of the selected repository contents.
 It is designed to be easily consumable by AI systems for analysis, code review,
-or other automated processes.
-</purpose>
-
-<file_format>
-The content is organized as follows:
+or other automated processes.`,
+        file_format:
+`The content is organized as follows:
 1. This summary section
 2. Directory structure (if enabled)
 3. Repository files, each consisting of:
   - File path as an attribute
-  - Full contents of the file
-</file_format>
-
-<usage_guidelines>
-- This file should be treated as read-only. Any changes should be made to the
+  - Full contents of the file`,
+        usage_guidelines:
+`- This file should be treated as read-only. Any changes should be made to the
   original repository files, not this packed version.
 - When processing this file, use the file path to distinguish
   between different files in the repository.
 - Be aware that this file may contain sensitive information. Handle it with
-  the same level of security as you would the original repository.
-</usage_guidelines>
-
-<notes>
-${notes}
-</notes>
-
-<additional_info>
-Packed from directory: ${options.directory}
-</additional_info>
-    `.trim();
+  the same level of security as you would the original repository.`,
+        notes: `${notesList.join('\n')}`,
+        additional_info: `Packed from directory: ${options.directory}`
+    };
 }
 
 export function generateXmlOutput(context: OutputContext): string {
-  const { directoryStructure, processedFiles, options } = context;
+  const { directoryStructure, processedFiles, options, ignorePatterns } = context;
   // Use the options from the extended PackCodebaseOptions
   const { fileSummary = true, directoryStructure: includeDirStructure = true } = options;
 
   const builder = new XMLBuilder({
     ignoreAttributes: false,
-    format: true, // Pretty print the XML
+    format: true,
+    indentBy: "  ",
     suppressBooleanAttributes: false,
-    suppressEmptyNode: true, // Remove empty tags like <additional_info/> if headerText is missing
+    suppressEmptyNode: true,
   });
 
   const xmlObject = {
     repomix: { // Using 'repomix' root tag as per the example format provided
-      '?xml-declaration': { '@_version': '1.0', '@_encoding': 'UTF-8' },
-      '#text': `This file is a merged representation of the codebase in ${options.directory}, combined into a single document by repopack-server.`,
-      ...(fileSummary && { file_summary: generateFileSummary(options) }),
+      description: `This file is a merged representation of the codebase in ${options.directory}, combined into a single document by repopack-server.`,
+      ...(fileSummary && { file_summary: generateFileSummaryObject(options) }),
+      ignored_patterns: {
+        intro: 'List of glob patterns used to exclude files (from defaults, custom options, and .gitignore):',
+        pattern: ignorePatterns.map(p => ({ '#text': p }))
+      },
       ...(includeDirStructure && { directory_structure: directoryStructure }),
       files: {
-        '#text': "This section contains the contents of the repository's files.",
+        '#text': "This section contains the contents of the repository\'s files.",
         file: processedFiles.map((file) => ({
           '@_path': file.path,
           '#text': file.content,

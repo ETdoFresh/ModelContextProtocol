@@ -15,6 +15,40 @@ import os from 'node:os';
 import { execSync } from 'node:child_process';
 import clipboard from 'clipboardy';
 
+// Helper function to normalize potential URI paths from clients
+function normalizePathUri(uriPath: string): string {
+  // Match patterns like /c%3A/..., /C%3A/... or file:///c%3A/...
+  const match = uriPath.match(/^(?:file:\/\/\/)?\/([a-zA-Z])%3A\/(.*)$/);
+  if (match && process.platform === 'win32') {
+    const driveLetter = match[1];
+    const restOfPath = match[2];
+    try {
+        // Decode URI components and replace forward slashes with backslashes for Windows
+        const decodedPath = decodeURIComponent(restOfPath);
+        const winPath = `${driveLetter}:\\${decodedPath.replace(/\//g, '\\')}`;
+        // console.error(`Normalized URI path "${uriPath}" to "${winPath}"`); // Optional logging
+        return winPath;
+    } catch (e) {
+        console.error(`Failed to decode/normalize path URI "${uriPath}":`, e);
+         // Fallback to original if decoding fails catastrophically
+         return uriPath;
+    }
+  }
+
+  // Also handle general URI decoding for non-windows or non-matching paths
+  try {
+      const decoded = decodeURIComponent(uriPath);
+      // if (decoded !== uriPath) { // Optional logging
+      //     console.error(`Decoded path URI "${uriPath}" to "${decoded}"`);
+      // }
+      return decoded;
+  } catch (e) {
+      console.error(`Failed to decode path URI "${uriPath}":`, e);
+      // Fallback to original if decoding fails
+      return uriPath;
+  }
+}
+
 // Restore original Zod Schema
 const PackCodebaseInputSchema = z.object({
   directory: z.string().describe("*Absolute path to the code directory to pack (Windows: C:\\Directory\\File.txt Mac/Linux: /Directory/File.txt) [Required]"),
@@ -46,10 +80,14 @@ async function handlePackCodebase(
     const validatedArgs = args;
     console.error("Validated args:", validatedArgs);
 
-    // Construct options for fileUtils, ensuring directory is absolute
+    // Normalize the directory path *before* resolving
+    const normalizedDirectory = normalizePathUri(validatedArgs.directory);
+    const resolvedNormalizedDirectory = path.resolve(normalizedDirectory); // Resolve the *normalized* path
+
+    // Construct options for fileUtils, using the resolved normalized path
     const packOptions: PackCodebaseOptions & { outputTarget: 'stdout' | 'file' | 'clipboard' } = {
-      directory: path.resolve(validatedArgs.directory), // Ensure absolute path
-      sourceIdentifier: validatedArgs.sourceIdentifier || path.resolve(validatedArgs.directory), // Use provided identifier or default to resolved directory
+      directory: resolvedNormalizedDirectory, // Use the fully resolved normalized path
+      sourceIdentifier: validatedArgs.sourceIdentifier || resolvedNormalizedDirectory, // Use resolved normalized path here too
       includePatterns: validatedArgs.includePatterns,
       ignorePatterns: validatedArgs.ignorePatterns,
       removeComments: validatedArgs.removeComments,
@@ -128,13 +166,19 @@ async function handlePackCodebase(
                 ? `repopack-output-${args.repoOwner}-${args.repoName}`
                 : `repopack-output`;
             const outputFilename = `${filenameBase}.${packOptions.outputFormat}`;
-            // Write file relative to the *original* directory if provided (from remote clone),
-            // otherwise use the input directory.
-            const baseDir = args.originalDirectory || packOptions.directory; // Use original if available
-            const outputPath = path.join(baseDir, outputFilename);
+
+            // Determine the base directory for the output file:
+            // Normalize the 'originalDirectory' if provided (from remote clone),
+            // otherwise, normalize the input 'directory' argument.
+            const outputBaseDirRaw = args.originalDirectory || validatedArgs.directory;
+            const outputBaseDirNormalized = normalizePathUri(outputBaseDirRaw);
+            const outputPath = path.join(outputBaseDirNormalized, outputFilename);
+
             try {
                 console.error(`Writing output to file: ${outputPath}`);
-                fs.writeFileSync(outputPath, outputContent, 'utf8');
+                // Ensure the directory exists before writing
+                await fsp.mkdir(path.dirname(outputPath), { recursive: true });
+                await fsp.writeFile(outputPath, outputContent, 'utf8');
                 console.error(`Successfully wrote to ${outputPath}`);
                 return {
                     content: [{ type: "text", text: `Repopack written to ${outputPath}` }],
@@ -191,7 +235,8 @@ async function handlePackCodebase(
 async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseInputSchema>): Promise<CallToolResult> {
   console.error("Received pack_remote_codebase request with args:", args); // Log to stderr
   let tempDir: string | undefined;
-  const originalDirectory = args.directory; // Capture the original directory arg
+  // Normalize the original directory arg *before* using it or passing it down
+  const originalDirectoryNormalized = normalizePathUri(args.directory);
 
   try {
     // 1. Create a temporary directory
@@ -231,14 +276,14 @@ async function handlePackRemoteCodebase(args: z.infer<typeof PackRemoteCodebaseI
     const packCodebaseArgs: z.infer<typeof PackCodebaseInputSchema> & { originalDirectory?: string; sourceIdentifier?: string; repoOwner?: string; repoName?: string } = {
       ...args, // Spread all args
       directory: tempDir, // Override directory with temp path
-      originalDirectory: originalDirectory, // Pass original directory for file output target
+      originalDirectory: originalDirectoryNormalized, // Pass *normalized* original directory
       sourceIdentifier: args.github_repo, // Pass repo URL as the source identifier
       repoOwner: repoOwner, // Pass owner for filename
       repoName: repoName, // Pass repo name for filename
     };
     // delete (packCodebaseArgs as any).github_repo; // Clean way to remove, though handlePackCodebase ignores it
 
-    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with original directory: ${originalDirectory}, sourceIdentifier: ${args.github_repo}, owner: ${repoOwner}, name: ${repoName}`);
+    console.error(`Calling handlePackCodebase for temp directory: ${tempDir} with normalized original directory: ${originalDirectoryNormalized}, sourceIdentifier: ${args.github_repo}, owner: ${repoOwner}, name: ${repoName}`);
     // 4. Call the original pack_codebase handler
     const result = await handlePackCodebase(packCodebaseArgs);
     console.error(`handlePackCodebase completed for ${tempDir}`);

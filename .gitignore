@@ -65,4 +65,4 @@ Thumbs.db
 mcp-servers/
 
 repomix-output.*
-repopack-output.*
+repopack-output*

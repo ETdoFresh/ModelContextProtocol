@@ -17,8 +17,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Relative paths to the other servers based on the requested structure
-const openRouterServerPath = path.resolve(__dirname, '../../openrouter/dist/server.js'); // Adjust if bin name is different
-const repopackServerPath = path.resolve(__dirname, '../../repopack/dist/index.js'); // Adjust if bin name is different
+const openRouterServerPath = path.resolve(__dirname, '../../openrouter');
+const repopackServerPath = path.resolve(__dirname, '../../repopack');
 
 const REPOROUTER_SERVER_NAME = "reporouter";
 const REPOROUTER_SERVER_VERSION = "0.1.0";
@@ -250,7 +250,7 @@ async function run() {
     // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
     const openRouterServerDir = path.dirname(openRouterServerPath);
     const openRouterTransport = new StdioClientTransport({
-      command: 'node',
+      command: 'npx',
       args: [openRouterServerPath],
       cwd: openRouterServerDir,
       env: getFilteredEnv(), // Pass filtered environment variables
@@ -275,7 +275,7 @@ async function run() {
     // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
     const repopackServerDir = path.dirname(repopackServerPath);
     const repopackTransport = new StdioClientTransport({
-        command: 'node',
+        command: 'npx',
         args: [repopackServerPath],
         cwd: repopackServerDir,
         env: getFilteredEnv(), // Pass filtered environment variables

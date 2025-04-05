@@ -250,10 +250,11 @@ async function run() {
   // Connect clients first
   try {
     const openRouterServerDir = path.dirname(openRouterServerPath);
-    logError(`Ensuring OpenRouter server is built in ${openRouterServerDir}...`);
+    const openRouterPackageDir = path.resolve(openRouterServerDir, '..'); // Go up one level for package root
+    logError(`Ensuring OpenRouter server is built in ${openRouterPackageDir}...`);
     try {
-      // Use spawnSync instead of execSync
-      const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: openRouterServerDir, stdio: 'inherit', env: getFilteredEnv() });
+      // Use spawnSync with the package directory as cwd
+      const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: openRouterPackageDir, stdio: 'inherit', env: getFilteredEnv() });
       if (buildResult.status !== 0) {
           // Handle potential errors, including ENOENT if spawnSync itself failed
           const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
@@ -272,12 +273,12 @@ async function run() {
     }
 
     logError(`Attempting to connect to OpenRouter server via: ${openRouterServerPath}`);
-    // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
+    // Use StdioClientTransport correctly: provide command, args, cwd (dist dir), and filtered env
     const openRouterTransport = new StdioClientTransport({
       command: 'node',
       args: [openRouterServerPath],
-      cwd: openRouterServerDir,
-      env: getFilteredEnv(), // Pass filtered environment variables
+      cwd: openRouterServerDir, // CWD for the *running* server is the dist dir
+      env: getFilteredEnv(),
       // stderr: 'pipe' // Optionally pipe stderr if needed for debugging child errors
     });
     // Add extra logging before connect
@@ -296,10 +297,11 @@ async function run() {
 
   try {
     const repopackServerDir = path.dirname(repopackServerPath);
-    logError(`Ensuring Repopack server is built in ${repopackServerDir}...`);
+    const repopackPackageDir = path.resolve(repopackServerDir, '..'); // Go up one level for package root
+    logError(`Ensuring Repopack server is built in ${repopackPackageDir}...`);
      try {
-        // Use spawnSync instead of execSync
-        const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: repopackServerDir, stdio: 'inherit', env: getFilteredEnv() });
+        // Use spawnSync with the package directory as cwd
+        const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: repopackPackageDir, stdio: 'inherit', env: getFilteredEnv() });
         if (buildResult.status !== 0) {
             const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
             logError(`Error building Repopack server: ${errorMsg}`);
@@ -317,12 +319,12 @@ async function run() {
      }
 
     logError(`Attempting to connect to Repopack server via: ${repopackServerPath}`);
-    // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
+    // Use StdioClientTransport correctly: provide command, args, cwd (dist dir), and filtered env
     const repopackTransport = new StdioClientTransport({
         command: 'node',
         args: [repopackServerPath],
-        cwd: repopackServerDir,
-        env: getFilteredEnv(), // Pass filtered environment variables
+        cwd: repopackServerDir, // CWD for the *running* server is the dist dir
+        env: getFilteredEnv(),
         // stderr: 'pipe' // Optionally pipe stderr
     });
     await repopackClient.connect(repopackTransport);

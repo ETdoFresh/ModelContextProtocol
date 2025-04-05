@@ -7,7 +7,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import type { Tool, CallToolResult, ListToolsRequest, ListToolsResult, CallToolRequest, CallToolRequestSchema, CallToolResultSchema, ClientRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs'; // Import existsSync
@@ -244,19 +244,24 @@ function getFilteredEnv(): Record<string, string> {
 }
 
 async function run() {
+  // Define the npm command based on platform
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
   // Connect clients first
   try {
-    logError(`Attempting to connect to OpenRouter server via: ${openRouterServerPath}`);
-    
-    // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
     const openRouterServerDir = path.dirname(openRouterServerPath);
+    logError(`Ensuring OpenRouter server is built in ${openRouterServerDir}...`);
+    try {
+      execSync(`${npmCmd} run build`, { cwd: openRouterServerDir, stdio: 'inherit' });
+      logError('OpenRouter server built successfully.');
+    } catch (buildError: any) {
+      logError(`Error building OpenRouter server: ${buildError.message}`);
+      // Optionally exit if build fails, or just log and continue if connection might still work
+      process.exit(1);
+    }
 
-    // Build the openrouter server
-    const openRouterServerBuildProcess = spawn('npm', ['run', 'build'], {
-        cwd: openRouterServerDir,
-        stdio: 'inherit', // Pipe stdout/stderr to parent process
-      });
-
+    logError(`Attempting to connect to OpenRouter server via: ${openRouterServerPath}`);
+    // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
     const openRouterTransport = new StdioClientTransport({
       command: 'node',
       args: [openRouterServerPath],
@@ -279,16 +284,19 @@ async function run() {
   }
 
   try {
+    const repopackServerDir = path.dirname(repopackServerPath);
+    logError(`Ensuring Repopack server is built in ${repopackServerDir}...`);
+     try {
+        execSync(`${npmCmd} run build`, { cwd: repopackServerDir, stdio: 'inherit' });
+        logError('Repopack server built successfully.');
+     } catch (buildError: any) {
+        logError(`Error building Repopack server: ${buildError.message}`);
+        // Optionally exit
+        process.exit(1);
+     }
+
     logError(`Attempting to connect to Repopack server via: ${repopackServerPath}`);
     // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
-    const repopackServerDir = path.dirname(repopackServerPath);
-
-    // Build the repopack server
-    const repopackServerBuildProcess = spawn('npm', ['run', 'build'], {
-      cwd: repopackServerDir,
-      stdio: 'inherit', // Pipe stdout/stderr to parent process
-    });
-
     const repopackTransport = new StdioClientTransport({
         command: 'node',
         args: [repopackServerPath],

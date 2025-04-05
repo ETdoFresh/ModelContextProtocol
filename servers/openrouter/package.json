@@ -1,0 +1,36 @@
+{
+  "name": "mcp-openrouter-server",
+  "version": "1.0.0",
+  "description": "MCP Server with OpenRouter Tool",
+  "main": "dist/server.js",
+  "type": "module",
+  "bin": {
+    "mcp-openrouter-server": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "npm run build; npm start",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "openrouter"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^7.10.0",
+    "@typescript-eslint/parser": "^7.10.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  }
+} 

@@ -253,8 +253,10 @@ async function run() {
     const openRouterPackageDir = path.resolve(openRouterServerDir, '..'); // Go up one level for package root
     logError(`Ensuring OpenRouter server is built in ${openRouterPackageDir}...`);
     try {
-      // Use spawnSync with the package directory as cwd
-      const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: openRouterPackageDir, stdio: 'inherit', env: getFilteredEnv() });
+      // Use spawnSync invoking cmd.exe explicitly on Windows
+      const command = process.platform === 'win32' ? 'cmd.exe' : npmCmd;
+      const args = process.platform === 'win32' ? ['/c', npmCmd, 'run', 'build'] : ['run', 'build'];
+      const buildResult = spawnSync(command, args, { cwd: openRouterPackageDir, stdio: 'inherit', env: getFilteredEnv() });
       if (buildResult.status !== 0) {
           // Handle potential errors, including ENOENT if spawnSync itself failed
           const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
@@ -300,8 +302,10 @@ async function run() {
     const repopackPackageDir = path.resolve(repopackServerDir, '..'); // Go up one level for package root
     logError(`Ensuring Repopack server is built in ${repopackPackageDir}...`);
      try {
-        // Use spawnSync with the package directory as cwd
-        const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: repopackPackageDir, stdio: 'inherit', env: getFilteredEnv() });
+        // Use spawnSync invoking cmd.exe explicitly on Windows
+        const command = process.platform === 'win32' ? 'cmd.exe' : npmCmd;
+        const args = process.platform === 'win32' ? ['/c', npmCmd, 'run', 'build'] : ['run', 'build'];
+        const buildResult = spawnSync(command, args, { cwd: repopackPackageDir, stdio: 'inherit', env: getFilteredEnv() });
         if (buildResult.status !== 0) {
             const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
             logError(`Error building Repopack server: ${errorMsg}`);

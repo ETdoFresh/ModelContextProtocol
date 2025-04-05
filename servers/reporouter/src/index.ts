@@ -252,7 +252,7 @@ async function run() {
     const openRouterServerDir = path.dirname(openRouterServerPath);
     logError(`Ensuring OpenRouter server is built in ${openRouterServerDir}...`);
     try {
-      execSync(`${npmCmd} run build`, { cwd: openRouterServerDir, stdio: 'inherit' });
+      execSync(`${npmCmd} run build`, { cwd: openRouterServerDir, stdio: 'inherit', env: getFilteredEnv() });
       logError('OpenRouter server built successfully.');
     } catch (buildError: any) {
       logError(`Error building OpenRouter server: ${buildError.message}`);
@@ -287,7 +287,7 @@ async function run() {
     const repopackServerDir = path.dirname(repopackServerPath);
     logError(`Ensuring Repopack server is built in ${repopackServerDir}...`);
      try {
-        execSync(`${npmCmd} run build`, { cwd: repopackServerDir, stdio: 'inherit' });
+        execSync(`${npmCmd} run build`, { cwd: repopackServerDir, stdio: 'inherit', env: getFilteredEnv() });
         logError('Repopack server built successfully.');
      } catch (buildError: any) {
         logError(`Error building Repopack server: ${buildError.message}`);

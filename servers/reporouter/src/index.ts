@@ -7,7 +7,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import type { Tool, CallToolResult, ListToolsRequest, ListToolsResult, CallToolRequest, CallToolRequestSchema, CallToolResultSchema, ClientRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { spawn, execSync } from 'node:child_process';
+import { spawn, execSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs'; // Import existsSync
@@ -252,11 +252,22 @@ async function run() {
     const openRouterServerDir = path.dirname(openRouterServerPath);
     logError(`Ensuring OpenRouter server is built in ${openRouterServerDir}...`);
     try {
-      execSync(`${npmCmd} run build`, { cwd: openRouterServerDir, stdio: 'inherit', env: getFilteredEnv() });
+      // Use spawnSync instead of execSync
+      const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: openRouterServerDir, stdio: 'inherit', env: getFilteredEnv() });
+      if (buildResult.status !== 0) {
+          // Handle potential errors, including ENOENT if spawnSync itself failed
+          const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
+          logError(`Error building OpenRouter server: ${errorMsg}`);
+          // Check for ENOENT by casting error to any
+          if (buildResult.error && (buildResult.error as any).code === 'ENOENT') {
+            logError(`Failed to find command: ${npmCmd}. Ensure Node.js/npm is installed and in PATH.`);
+          }
+          process.exit(1);
+      }
       logError('OpenRouter server built successfully.');
     } catch (buildError: any) {
-      logError(`Error building OpenRouter server: ${buildError.message}`);
-      // Optionally exit if build fails, or just log and continue if connection might still work
+       // Catch errors during the spawnSync call itself (less likely for sync)
+      logError(`Error executing build for OpenRouter server: ${buildError.message}`);
       process.exit(1);
     }
 
@@ -287,11 +298,21 @@ async function run() {
     const repopackServerDir = path.dirname(repopackServerPath);
     logError(`Ensuring Repopack server is built in ${repopackServerDir}...`);
      try {
-        execSync(`${npmCmd} run build`, { cwd: repopackServerDir, stdio: 'inherit', env: getFilteredEnv() });
+        // Use spawnSync instead of execSync
+        const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: repopackServerDir, stdio: 'inherit', env: getFilteredEnv() });
+        if (buildResult.status !== 0) {
+            const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
+            logError(`Error building Repopack server: ${errorMsg}`);
+             // Check for ENOENT by casting error to any
+            if (buildResult.error && (buildResult.error as any).code === 'ENOENT') {
+                logError(`Failed to find command: ${npmCmd}. Ensure Node.js/npm is installed and in PATH.`);
+            }
+            process.exit(1);
+        }
         logError('Repopack server built successfully.');
      } catch (buildError: any) {
-        logError(`Error building Repopack server: ${buildError.message}`);
-        // Optionally exit
+        // Catch errors during the spawnSync call itself
+        logError(`Error executing build for Repopack server: ${buildError.message}`);
         process.exit(1);
      }
 

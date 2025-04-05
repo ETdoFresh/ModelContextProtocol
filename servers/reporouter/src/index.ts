@@ -11,6 +11,7 @@ import { spawn, execSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs'; // Import existsSync
+import { logError, ensurePackageBuilt, getFilteredEnv } from './utils/processUtils.js';
 
 // --- Configuration ---
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +27,6 @@ const OPENROUTER_TARGET_ID = "openrouter-target"; // Internal ID for the client 
 const REPOPACK_TARGET_ID = "repopack-target";   // Internal ID for the client connection
 
 // --- Helper: Log to stderr ---
-const logError = (...args: any[]) => console.error(`[${REPOROUTER_SERVER_NAME}]`, ...args);
 
 // --- Client Setup ---
 
@@ -231,57 +231,12 @@ server.tool(
 
 // --- Start Server and Connect Clients ---
 
-// Function to filter undefined values from process.env
-function getFilteredEnv(): Record<string, string> {
-  const filteredEnv: Record<string, string> = {};
-  for (const key in process.env) {
-    const value = process.env[key];
-    if (value !== undefined) {
-      filteredEnv[key] = value;
-    }
-  }
-  return filteredEnv;
-}
-
 async function run() {
-  // Define the npm command based on platform
-  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-
   // Connect clients first
   try {
     const openRouterServerDir = path.dirname(openRouterServerPath);
     const openRouterPackageDir = path.resolve(openRouterServerDir, '..'); // Go up one level for package root
-    logError(`Ensuring OpenRouter server dependencies and build in ${openRouterPackageDir}...`);
-    try {
-      // Run npm install first using shell:true
-      logError(`Running command: ${npmCmd} install in ${openRouterPackageDir}`);
-      const installResult = spawnSync(npmCmd, ['install'], { cwd: openRouterPackageDir, stdio: 'inherit', env: getFilteredEnv(), shell: true });
-      if (installResult.status !== 0) {
-        const errorMsg = installResult.error?.message || `Install failed with status ${installResult.status}`;
-        logError(`Error installing OpenRouter dependencies: ${errorMsg}`);
-        if (installResult.error && (installResult.error as any).code === 'ENOENT') {
-          logError(`Failed to find command: ${npmCmd}. Ensure Node.js/npm is installed and in PATH.`);
-        }
-        process.exit(1);
-      }
-      logError('OpenRouter dependencies installed.');
-
-      // Then run npm run build using shell:true
-      logError(`Running command: ${npmCmd} run build in ${openRouterPackageDir}`);
-      const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: openRouterPackageDir, stdio: 'inherit', env: getFilteredEnv(), shell: true });
-      if (buildResult.status !== 0) {
-          const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
-          logError(`Error building OpenRouter server: ${errorMsg}`);
-          if (buildResult.error && (buildResult.error as any).code === 'ENOENT') {
-            logError(`Failed to find command: ${npmCmd}. Ensure Node.js/npm is installed and in PATH.`);
-          }
-          process.exit(1);
-      }
-      logError('OpenRouter server built successfully.');
-    } catch (buildError: any) {
-       logError(`Error executing setup for OpenRouter server: ${buildError.message}`);
-       process.exit(1);
-    }
+    ensurePackageBuilt(openRouterPackageDir, 'OpenRouter Server');
 
     logError(`Attempting to connect to OpenRouter server via: ${openRouterServerPath}`);
     // Use StdioClientTransport correctly: provide command, args, cwd (dist dir), and filtered env
@@ -309,37 +264,7 @@ async function run() {
   try {
     const repopackServerDir = path.dirname(repopackServerPath);
     const repopackPackageDir = path.resolve(repopackServerDir, '..'); // Go up one level for package root
-    logError(`Ensuring Repopack server dependencies and build in ${repopackPackageDir}...`);
-     try {
-        // Run npm install first using shell:true
-        logError(`Running command: ${npmCmd} install in ${repopackPackageDir}`);
-        const installResult = spawnSync(npmCmd, ['install'], { cwd: repopackPackageDir, stdio: 'inherit', env: getFilteredEnv(), shell: true });
-        if (installResult.status !== 0) {
-            const errorMsg = installResult.error?.message || `Install failed with status ${installResult.status}`;
-            logError(`Error installing Repopack dependencies: ${errorMsg}`);
-            if (installResult.error && (installResult.error as any).code === 'ENOENT') {
-                logError(`Failed to find command: ${npmCmd}. Ensure Node.js/npm is installed and in PATH.`);
-            }
-            process.exit(1);
-        }
-        logError('Repopack dependencies installed.');
-
-        // Then run npm run build using shell:true
-        logError(`Running command: ${npmCmd} run build in ${repopackPackageDir}`);
-        const buildResult = spawnSync(npmCmd, ['run', 'build'], { cwd: repopackPackageDir, stdio: 'inherit', env: getFilteredEnv(), shell: true });
-        if (buildResult.status !== 0) {
-            const errorMsg = buildResult.error?.message || `Build failed with status ${buildResult.status}`;
-            logError(`Error building Repopack server: ${errorMsg}`);
-             if (buildResult.error && (buildResult.error as any).code === 'ENOENT') {
-                logError(`Failed to find command: ${npmCmd}. Ensure Node.js/npm is installed and in PATH.`);
-            }
-            process.exit(1);
-        }
-        logError('Repopack server built successfully.');
-     } catch (buildError: any) {
-        logError(`Error executing setup for Repopack server: ${buildError.message}`);
-        process.exit(1);
-     }
+    ensurePackageBuilt(repopackPackageDir, 'Repopack Server');
 
     logError(`Attempting to connect to Repopack server via: ${repopackServerPath}`);
     // Use StdioClientTransport correctly: provide command, args, cwd (dist dir), and filtered env

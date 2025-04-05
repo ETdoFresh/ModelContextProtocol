@@ -17,8 +17,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Relative paths to the other servers based on the requested structure
-const openRouterServerPath = path.resolve(__dirname, '../../openrouter');
-const repopackServerPath = path.resolve(__dirname, '../../repopack');
+const openRouterServerPath = path.resolve(__dirname, '../../openrouter/dist/server.js');
+const repopackServerPath = path.resolve(__dirname, '../../repopack/dist/index.js');
 
 const REPOROUTER_SERVER_NAME = "reporouter";
 const REPOROUTER_SERVER_VERSION = "0.1.0";
@@ -247,10 +247,18 @@ async function run() {
   // Connect clients first
   try {
     logError(`Attempting to connect to OpenRouter server via: ${openRouterServerPath}`);
+    
     // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
     const openRouterServerDir = path.dirname(openRouterServerPath);
+
+    // Build the openrouter server
+    const openRouterServerBuildProcess = spawn('npm', ['run', 'build'], {
+        cwd: openRouterServerDir,
+        stdio: 'inherit', // Pipe stdout/stderr to parent process
+      });
+
     const openRouterTransport = new StdioClientTransport({
-      command: 'npx',
+      command: 'node',
       args: [openRouterServerPath],
       cwd: openRouterServerDir,
       env: getFilteredEnv(), // Pass filtered environment variables
@@ -274,8 +282,15 @@ async function run() {
     logError(`Attempting to connect to Repopack server via: ${repopackServerPath}`);
     // Use StdioClientTransport correctly: provide command, args, cwd, and filtered env
     const repopackServerDir = path.dirname(repopackServerPath);
+
+    // Build the repopack server
+    const repopackServerBuildProcess = spawn('npm', ['run', 'build'], {
+      cwd: repopackServerDir,
+      stdio: 'inherit', // Pipe stdout/stderr to parent process
+    });
+
     const repopackTransport = new StdioClientTransport({
-        command: 'npx',
+        command: 'node',
         args: [repopackServerPath],
         cwd: repopackServerDir,
         env: getFilteredEnv(), // Pass filtered environment variables

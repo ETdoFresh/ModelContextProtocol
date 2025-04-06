@@ -1,23 +1,23 @@
 import { z } from "zod";
-import { githubGraphQLRequest, githubRequest } from "../common/utils.js"; // Corrected import path
-import { GitHubIssueSchema, GitHubPullRequestSchema } from "../common/types.js"; // Assuming types.ts exists in common
+import { githubGraphQLRequest, githubRequest } from "../common/utils.js";
+import { GitHubIssueSchema, GitHubPullRequestSchema } from "../common/types.js";
 
 // --- Schemas ---
 
-// Example: Schema to find a project ID by owner login and project number
+// Schema to find a project ID by owner login and project number
 export const FindProjectIDSchema = z.object({
   ownerLogin: z.string().describe("Login of the user or organization owning the project"),
   projectNumber: z.number().int().positive().describe("The number of the project (visible in the URL)"),
 });
 
-// Example: Schema to list items in a project
+// Schema to list items in a project
 export const ListProjectItemsSchema = z.object({
   projectId: z.string().describe("The Node ID of the project (e.g., 'PVT_kwDOA...')"),
   first: z.number().int().positive().optional().default(30).describe("Number of items to fetch"),
   after: z.string().optional().describe("Cursor for pagination"),
 });
 
-// Example: Schema to add an existing issue/PR to a project
+// Schema to add an existing issue/PR to a project
 export const AddProjectItemSchema = z.object({
     projectId: z.string().describe("The Node ID of the project"),
     contentId: z.string().describe("The Node ID of the Issue or Pull Request to add"),
@@ -31,12 +31,14 @@ export const GetItemNodeIdSchema = z.object({
     type: z.enum(['issue', 'pr']),
 });
 
+// Schema for creating a new project
 export const CreateProjectSchema = z.object({
     ownerId: z.string().describe("The Node ID of the owner (User or Organization) for the new project."),
     title: z.string().describe("The title of the new project."),
     repositoryId: z.string().optional().describe("Optional: The Node ID of a repository to link to the project.")
 });
 
+// Schema for updating an existing project
 export const UpdateProjectSchema = z.object({
     projectId: z.string().describe("The Node ID of the project to update."),
     title: z.string().optional().describe("The new title for the project."),
@@ -45,6 +47,7 @@ export const UpdateProjectSchema = z.object({
     closed: z.boolean().optional().describe("Set to true to close the project, false to reopen.")
 });
 
+// Schema for deleting a project
 export const DeleteProjectSchema = z.object({
     projectId: z.string().describe("The Node ID of the project to delete.")
 });
@@ -158,17 +161,17 @@ const CREATE_PROJECT_MUTATION = `
 
 const UPDATE_PROJECT_MUTATION = `
   mutation UpdateProject(
-      $projectId: ID!, 
-      $title: String, 
-      $shortDescription: String, 
-      $readme: String, 
+      $projectId: ID!,
+      $title: String,
+      $shortDescription: String,
+      $readme: String,
       $closed: Boolean
     ) {
     updateProjectV2(input: {
-        projectId: $projectId, 
-        title: $title, 
-        shortDescription: $shortDescription, 
-        readme: $readme, 
+        projectId: $projectId,
+        title: $title,
+        shortDescription: $shortDescription,
+        readme: $readme,
         closed: $closed
       }) {
       projectV2 {
@@ -193,7 +196,7 @@ const DELETE_PROJECT_MUTATION = `
   }
 `;
 
-// Mutation for creating a status update
+// Corrected: Removed author and projectV2 fields
 const CREATE_PROJECT_STATUS_UPDATE_MUTATION = `
   mutation CreateProjectStatusUpdate($projectId: ID!, $body: String!) {
     createProjectV2StatusUpdate(input: {projectId: $projectId, body: $body}) {
@@ -203,13 +206,7 @@ const CREATE_PROJECT_STATUS_UPDATE_MUTATION = `
         body
         # status # Add if exists in API
         # title # Add if exists in API
-        author {
-          login
-        }
-        projectV2 {
-            id
-            title
-        }
+        # Removed author and projectV2 as they do not exist on ProjectV2StatusUpdate type
       }
     }
   }
@@ -233,10 +230,8 @@ const GET_NODE_ID_BY_LOGIN_QUERY = `
 // Helper to find Project ID (needed for most other operations)
 export async function findProjectID(ownerLogin: string, projectNumber: number): Promise<{ id: string; title: string } | null> {
   const data = await githubGraphQLRequest(GET_PROJECT_ID_QUERY, { ownerLogin, projectNumber });
-  // GraphQL returns null for the field if the user/org doesn't exist or doesn't have the project
   const projectData = data?.user?.projectV2 || data?.organization?.projectV2;
   if (!projectData?.id) {
-      // Provide a more specific error message based on whether user/org data was returned at all
       if (!data?.user && !data?.organization) {
          throw new Error(`Owner '${ownerLogin}' not found or not accessible.`);
       }
@@ -245,7 +240,7 @@ export async function findProjectID(ownerLogin: string, projectNumber: number): 
   return { id: projectData.id, title: projectData.title };
 }
 
-// List items
+// List items in a project
 export async function listProjectItems(projectId: string, first?: number, after?: string) {
   const variables: Record<string, any> = { projectId };
   if (first !== undefined) variables.first = first;
@@ -253,59 +248,57 @@ export async function listProjectItems(projectId: string, first?: number, after?
 
   const data = await githubGraphQLRequest(LIST_PROJECT_ITEMS_QUERY, variables);
    if (!data?.node) {
-       // This could mean the node ID is wrong, or permissions are missing.
        throw new Error(`Project with Node ID '${projectId}' not found or access denied.`);
    }
-   // Check if the returned node is actually a ProjectV2 by looking for a known field like 'items'
    if (typeof (data.node as any).items !== 'object' || (data.node as any).items === null) {
        throw new Error(`Node ID '${projectId}' does not appear to be a V2 Project.`);
    }
-  return data.node.items; // Return the items connection object (includes nodes, pageInfo, totalCount)
+  return data.node.items;
 }
 
-// Add Item
+// Add an item (Issue or PR) to a project
 export async function addProjectItem(projectId: string, contentId: string) {
     const data = await githubGraphQLRequest(ADD_PROJECT_ITEM_MUTATION, { projectId, contentId });
-    // Check specifically for the nested structure expected on success
     const itemId = data?.addProjectV2ItemById?.item?.id;
     if (!itemId) {
-        // Attempt to provide a more helpful error based on typical GraphQL responses
         console.error("Failed to add project item. Response data:", JSON.stringify(data, null, 2));
         throw new Error(`Failed to add item with Node ID '${contentId}' to project with Node ID '${projectId}'. Verify the IDs are correct, the item type is supported (Issue/PR), and you have write permissions for the project.`);
     }
-    return data.addProjectV2ItemById.item; // Return the newly added project item node { id: '...' }
+    return data.addProjectV2ItemById.item;
 }
 
 // Helper to get Issue/PR Node ID (using REST API)
 export async function getItemNodeId(owner: string, repo: string, itemNumber: number, type: 'issue' | 'pr'): Promise<string> {
     const endpoint = type === 'issue' ? 'issues' : 'pulls';
-    const url = `/repos/${owner}/${repo}/${endpoint}/${itemNumber}`; // Use relative path for githubRequest
+    const url = `/repos/${owner}/${repo}/${endpoint}/${itemNumber}`;
 
     try {
-        const response = await githubRequest(url); // githubRequest handles base URL
+        const response = await githubRequest(url);
 
-        // Use Zod to parse and extract node_id - ensure schemas include node_id
-         if (type === 'issue') {
-             // Ensure GitHubIssueSchema has node_id defined
-             const issue = GitHubIssueSchema.passthrough().parse(response); // Use passthrough for flexibility
-             if (!issue.node_id) throw new Error(`'node_id' missing in issue response.`);
-             return issue.node_id;
-         } else {
-              // Ensure GitHubPullRequestSchema has node_id defined
-             const pr = GitHubPullRequestSchema.passthrough().parse(response); // Use passthrough for flexibility
-             if (!pr.node_id) throw new Error(`'node_id' missing in pull request response.`);
-             return pr.node_id;
-         }
-    } catch (e: any) {
+        if (type === 'issue') {
+            // Corrected: Use passthrough() and check node_id
+            const issue = GitHubIssueSchema.passthrough().parse(response);
+            if (!issue.node_id) throw new Error(`'node_id' missing in issue response.`); // Corrected closing parenthesis
+            return issue.node_id;
+        } else {
+            // Corrected: Use passthrough() and check node_id
+            const pr = GitHubPullRequestSchema.passthrough().parse(response);
+            if (!pr.node_id) throw new Error(`'node_id' missing in pull request response.`);
+            return pr.node_id;
+        }
+    } catch (e: any) { // Corrected: Added closing brace for try block
         console.error(`Failed to parse ${type} response or get node_id for ${owner}/${repo}#${itemNumber}:`, e);
         if (e instanceof z.ZodError) {
              throw new Error(`Could not parse response for ${type} #${itemNumber} in ${owner}/${repo}. Schema validation failed: ${e.errors.map(err => err.message).join(', ')}`);
         }
-        // Re-throw GitHub API errors or other exceptions
-        throw new Error(`Could not retrieve Node ID for ${type} #${itemNumber} in ${owner}/${repo}. Reason: ${e.message || 'Unknown error'}`);
-    }
-}
+        // Provide more context on the error
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        const status = e?.status ? `Status: ${e.status}, ` : ''; // Include status code if available
+        throw new Error(`Could not retrieve Node ID for ${type} #${itemNumber} in ${owner}/${repo}. ${status}Reason: ${errorMessage}`);
+    } // Corrected: Added closing brace for catch block
+} // Corrected: Added closing brace for function
 
+// Create a new project
 export async function createProject(
     ownerId: string,
     title: string,
@@ -324,17 +317,17 @@ export async function createProject(
     return data.createProjectV2.projectV2;
 }
 
+// Update an existing project
 export async function updateProject(
     updates: z.infer<typeof UpdateProjectSchema>
 ): Promise<{ id: string; title: string | null; shortDescription: string | null; readme: string | null; closed: boolean; url: string }> {
-    // Prepare variables, ensuring we don't send empty strings if null was intended
     const variables: Record<string, any> = { projectId: updates.projectId };
+    // Only include fields that are explicitly provided (not undefined)
     if (updates.title !== undefined) variables.title = updates.title;
-    if (updates.shortDescription !== undefined) variables.shortDescription = updates.shortDescription;
-    if (updates.readme !== undefined) variables.readme = updates.readme;
+    if (updates.shortDescription !== undefined) variables.shortDescription = updates.shortDescription; // Can be null
+    if (updates.readme !== undefined) variables.readme = updates.readme; // Can be null
     if (updates.closed !== undefined) variables.closed = updates.closed;
 
-    // Check if any update fields were actually provided besides projectId
     if (Object.keys(variables).length <= 1) {
         throw new Error("No update fields provided for the project.");
     }
@@ -348,6 +341,7 @@ export async function updateProject(
     return data.updateProjectV2.projectV2;
 }
 
+// Delete a project
 export async function deleteProject(projectId: string): Promise<{ id: string }> {
     const data = await githubGraphQLRequest(DELETE_PROJECT_MUTATION, { projectId });
 
@@ -359,14 +353,15 @@ export async function deleteProject(projectId: string): Promise<{ id: string }> 
     return { id: data.deleteProjectV2.projectV2.id };
 }
 
-// Function to create a project status update
+// Create a project status update
 export async function createProjectStatusUpdate(
     projectId: string,
     body: string
-): Promise<any> { // Define a specific return type based on mutation response
+): Promise<{ id: string; createdAt: string; body: string }> { // More specific return type
     const variables = { projectId, body };
     const data = await githubGraphQLRequest(CREATE_PROJECT_STATUS_UPDATE_MUTATION, variables);
 
+    // Corrected path based on the updated mutation
     if (!data?.createProjectV2StatusUpdate?.statusUpdate?.id) {
         console.error("Failed to create project status update. Response data:", JSON.stringify(data, null, 2));
         throw new Error(`Failed to create status update for project ${projectId}. Check project ID and permissions.`);
@@ -374,7 +369,7 @@ export async function createProjectStatusUpdate(
     return data.createProjectV2StatusUpdate.statusUpdate;
 }
 
-// Function to get Node ID for a user or organization login
+// Get Node ID for a user or organization login
 export async function getNodeIdByLogin(login: string): Promise<{ nodeId: string } | null> {
     const data = await githubGraphQLRequest(GET_NODE_ID_BY_LOGIN_QUERY, { login });
 
@@ -387,9 +382,7 @@ export async function getNodeIdByLogin(login: string): Promise<{ nodeId: string 
         return { nodeId: data.organization.id };
     }
 
-    // If neither was found (and githubGraphQLRequest didn't throw for critical errors)
-    // it means the login doesn't correspond to an accessible user or org.
-    // Log the response for debugging, as non-critical errors might be present.
+    // If neither was found
     console.warn(`Could not resolve login '${login}' to a user or organization. Response data:`, JSON.stringify(data, null, 2));
     throw new Error(`Could not resolve login '${login}' to a user or organization, or you may lack permissions.`);
-} 
+}

@@ -28,6 +28,10 @@
   },
   "devDependencies": {
     "@types/clipboardy": "^1.1.0",
-    "@types/node": "^22.14.0"
+    "@types/node": "^22.14.0",
+    "build": "^0.1.4",
+    "run": "^1.5.0",
+    "typescript": "^5.8.3",
+    "typescriptnpm": "^1.0.1"
   }
 }
